@@ -5,3 +5,5 @@
 *.userosscache
 *.sln.docstates
 *.env
+
+notebooks/data
