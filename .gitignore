@@ -13,3 +13,4 @@ notebooks/data
 src/*.egg-info/
 volumes/
 __pycache__
+*.db
