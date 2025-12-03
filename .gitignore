@@ -6,4 +6,10 @@
 *.sln.docstates
 *.env
 
+.venv
+
 notebooks/data
+
+src/*.egg-info/
+volumes/
+__pycache__
