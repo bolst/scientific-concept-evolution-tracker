@@ -47,10 +47,25 @@ def ingest_metadata():
     Base.metadata.create_all(bind=engine)
 
     # don't load everything: stream line-by-line
+    count = 0
+    
+    # want to sample for a diverse set of years...
+    # Strategy: skip N records between each ingestion to sample across the file (assuming file is sorted by year)
+    # The file is roughly 2.4M lines. If LIMIT is 1000, we want to sample every ~2400th line
+
+    ESTIMATED_TOTAL = 2_400_000
+    step_size = max(1, ESTIMATED_TOTAL // LIMIT)
+    
+    print(f"Sampling strategy: Taking 1 paper every {step_size} lines to span the dataset.")
+
     with open(DATA_PATH, 'r') as f:
-        for lines_read, line in enumerate(f):
-            if lines_read >= LIMIT:
+        for i, line in enumerate(f):
+            if count >= LIMIT:
                 break
+            
+            # Only process if it matches our step
+            if i % step_size != 0:
+                continue
             
             entry = json.loads(line)
             
@@ -96,8 +111,9 @@ def ingest_metadata():
             try:
                 # use merge to handle duplicates
                 db.merge(paper)
-                if lines_read % 100 == 0:
-                    print(f"Processed {lines_read} papers...")
+                count += 1
+                if count % 100 == 0:
+                    print(f"Processed {count} papers...")
                     db.commit()
             except Exception as e:
                 print(f"Error processing {arxiv_id}: {e}")
@@ -105,7 +121,7 @@ def ingest_metadata():
 
     db.commit()
     db.close()
-    print(f"completed ingesting {lines_read} papers")
+    print(f"Finished processing total of {count} papers")
 
 if __name__ == "__main__":
     ingest_metadata()
