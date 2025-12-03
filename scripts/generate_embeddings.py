@@ -22,7 +22,6 @@ load_dotenv()
 
 
 BATCH_SIZE = 20 # batch size of papers to generate embeddings for
-LIMIT = int(os.getenv("DATASET_LIMIT", 1000))
 MILVUS_HOST = os.getenv("MILVUS_HOST", "localhost")
 MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
 COLLECTION_NAME = os.getenv("MILVUS_COLLECTION_NAME", "scientific_concepts")
@@ -81,7 +80,7 @@ def generate_embeddings():
     db = SessionLocal()
     
     # fetch papers that we have not embedded yet
-    papers = db.query(Paper).filter(Paper.processed_status != "embedded").limit(LIMIT).all()
+    papers = db.query(Paper).filter(Paper.processed_status != "embedded").all()
     print(f"Fetched {len(papers)} papers from DB.")
         
     for i in tqdm(range(0, len(papers), BATCH_SIZE)):
@@ -95,7 +94,7 @@ def generate_embeddings():
             text = title + sep_token + abstract 
             texts.append(text)
             
-        embeddings = model.encode(texts, convert_to_tensor=False)
+        embeddings = model.encode(texts, convert_to_tensor=False, normalize_embeddings=True)
 
         # prepare data for Milvus
         # Schema: [vector_id, arxiv_id, chunk_index, embedding, year, timestamp, category_tag, citation_count]

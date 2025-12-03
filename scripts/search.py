@@ -38,7 +38,7 @@ def search(query: str, year: int = None, limit: int = 10):
     model = get_model()
     
     # encode and build query
-    query_embedding = model.encode([query])[0].tolist()
+    query_embedding = model.encode([query], normalize_embeddings=True)[0].tolist()
     search_params = {
         "metric_type": "IP", 
         "params": {"nprobe": 10}
