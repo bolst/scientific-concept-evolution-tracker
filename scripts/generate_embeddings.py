@@ -1,5 +1,6 @@
 import os
 import time
+import warnings
 from tqdm import tqdm
 from sentence_transformers import SentenceTransformer
 from pymilvus import (
@@ -71,75 +72,133 @@ def load_model():
     model = SentenceTransformer(EMBEDDING_MODEL)
     return model
 
+def process_batch(batch_papers, collection, model, db):
+    if not batch_papers:
+        return
+
+    # Identify which papers actually need processing
+    # We check Milvus for any paper that is marked as 'embedded' to verify it exists.
+    # Papers not marked 'embedded' definitely need processing
+    ids_to_check = [p.arxiv_id for p in batch_papers if p.processed_status == 'embedded']
+    papers_to_process = [p for p in batch_papers if p.processed_status != 'embedded']
+    
+    # ensure that papers marked as "embedded" are actually embedded
+    if ids_to_check:
+        # query Milvus to see which of these IDs already exist
+        # this should be fine for batch sizes ~1000
+        if (batch_size := len(batch_papers)) > 1000:
+            warnings.warn(f"Batch size is {batch_size} > 1000... this may cause performance issues")
+        try:
+            formatted_ids = [f'"{bid}"' for bid in ids_to_check]
+            expr = f"arxiv_id in [{', '.join(formatted_ids)}]"
+            res = collection.query(expr, output_fields=["arxiv_id"])
+            found_ids = {hit['arxiv_id'] for hit in res}
+            
+            # if a paper was marked embedded but is not in Milvus, add to process list
+            for p in batch_papers:
+                if p.processed_status == 'embedded' and p.arxiv_id not in found_ids:
+                    papers_to_process.append(p)
+        except Exception as e:
+            # if check fails, assume we need to process to be safe
+            print(f"Error checking Milvus for batch: {e}")
+            for p in batch_papers:
+                if p.processed_status == 'embedded':
+                    papers_to_process.append(p)
+
+    # if none to process, exit early
+    if not papers_to_process or len(papers_to_process) == 0:
+        return
+
+    # generate embeddings for the filtered list
+    texts = []
+    for p in papers_to_process:
+        title = p.title or ""
+        abstract = p.abstract or ""
+        sep_token = getattr(model.tokenizer, 'sep_token', ' ') or ' '
+        text = title + sep_token + abstract 
+        texts.append(text)
+    embeddings = model.encode(texts, convert_to_tensor=False, normalize_embeddings=True)
+
+    # prepare data for Milvus
+    mr_arxiv_ids = []
+    mr_chunk_indices = []
+    mr_embeddings = []
+    mr_years = []
+    mr_timestamps = []
+    mr_category_tags = []
+    mr_citation_counts = []
+    
+    for j, p in enumerate(papers_to_process):
+        mr_arxiv_ids.append(p.arxiv_id)
+        mr_chunk_indices.append(0) 
+        mr_embeddings.append(embeddings[j])
+        mr_years.append(p.published_date.year if p.published_date else 2000)
+        mr_timestamps.append(int(time.mktime(p.published_date.timetuple())) if p.published_date else 0)
+        mr_category_tags.append(hash(p.primary_category) % 10000 
+                                if p.primary_category 
+                                else 0) # simple hash for category
+        mr_citation_counts.append(0) # TODO: may not even need this
+
+    data = [
+        mr_arxiv_ids, mr_chunk_indices, mr_embeddings, mr_years, 
+        mr_timestamps, mr_category_tags, mr_citation_counts
+    ]
+    
+    # upsert to Milvus
+    try:
+        formatted_ids = [f'"{bid}"' for bid in mr_arxiv_ids]
+        expr = f"arxiv_id in [{', '.join(formatted_ids)}]"
+        collection.delete(expr)
+    except Exception as e:
+        # delete might fail if doesn't exist... which is fine
+        print(f"deletion failed: {e}")
+        pass
+    collection.insert(data)
+    
+    # update DB
+    for p in papers_to_process:
+        p.processed_status = 'embedded'
+    # db.commit()
+
+def chunked_iterable(iterable, size):
+    """Yields chunks of an iterable"""
+    it = iter(iterable)
+    while True:
+        chunk = []
+        try:
+            for _ in range(size):
+                chunk.append(next(it))
+        except StopIteration:
+            pass
+        if chunk:
+            yield chunk
+        if len(chunk) < size:
+            break
+
 def generate_embeddings():
     connect_milvus()
     collection = create_collection_if_not_exists()
+    collection.load() 
     model = load_model()
-    
     db = SessionLocal()
     
-    # fetch papers that we have not embedded yet
-    papers = db.query(Paper).filter(Paper.processed_status != "embedded").all()
-    print(f"Fetched {len(papers)} papers from DB.")
-        
-    for i in tqdm(range(0, len(papers), BATCH_SIZE)):
-        batch_papers = papers[i:i+BATCH_SIZE]
-        
-        texts = []
-        for p in batch_papers:
-            title = p.title or ""
-            abstract = p.abstract or ""
-            sep_token = getattr(model.tokenizer, 'sep_token', ' ') or ' '
-            text = title + sep_token + abstract 
-            texts.append(text)
-            
-        embeddings = model.encode(texts, convert_to_tensor=False, normalize_embeddings=True)
-
-        # prepare data for Milvus
-        # Schema: [vector_id, arxiv_id, chunk_index, embedding, year, timestamp, category_tag, citation_count]
-        
-        mr_arxiv_ids = []
-        mr_chunk_indices = []
-        mr_embeddings = []
-        mr_years = []
-        mr_timestamps = []
-        mr_category_tags = []
-        mr_citation_counts = []
-        
-        for j, p in enumerate(batch_papers):
-            mr_arxiv_ids.append(p.arxiv_id)
-            mr_chunk_indices.append(0) # Only 1 chunk for now
-            mr_embeddings.append(embeddings[j])
-            
-            year = p.published_date.year if p.published_date else 2000
-            mr_years.append(year)
-            
-            ts = int(time.mktime(p.published_date.timetuple())) if p.published_date else 0
-            mr_timestamps.append(ts)
-            
-            # Simple hash for category tag
-            cat_hash = hash(p.primary_category) % 10000 if p.primary_category else 0
-            mr_category_tags.append(cat_hash)
-            
-            mr_citation_counts.append(0) # just put 0 for now
-            
-        data = [
-            mr_arxiv_ids,
-            mr_chunk_indices,
-            mr_embeddings,
-            mr_years,
-            mr_timestamps,
-            mr_category_tags,
-            mr_citation_counts
-        ]
-        
-        collection.insert(data)
-        
-        # TODO: set processed_status in db to "embedded"
+    # for progress bar
+    total_papers = db.query(Paper).count()
+    print(f"Total papers in DB: {total_papers}")
+    
+    # stream results from DB instead of loading all at once
+    paper_stream = db.query(Paper).yield_per(1000)
+    
+    # Process in batches
+    # Use a larger batch size for DB/Milvus checks (e.g. 100)
+    # Embedding model batching is handled inside process_batch if needed, 
+    # but here we just pass 100 papers to process_batch.
+    # SPECTER2 can handle 20-30 easily... 100 might be slow on CPU
+    for batch in tqdm(chunked_iterable(paper_stream, BATCH_SIZE), total=total_papers//BATCH_SIZE):
+        process_batch(batch, collection, model, db)
+    db.commit()
         
     print("Done generating and inserting embeddings")
-    
-    # ensure data is persisted
     collection.flush()
     print(f"Collection row count: {collection.num_entities}")
 
