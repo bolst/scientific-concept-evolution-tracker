@@ -9,9 +9,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-
+limit_str = os.getenv("DATASET_LIMIT")
+LIMIT = int(limit_str) if limit_str else None
 DATA_PATH = os.path.join(os.path.dirname(__file__), '../notebooks/data/arxiv-metadata-oai-snapshot.json')
-LIMIT = int(os.getenv("DATASET_LIMIT", 1000))
 
 
 
@@ -34,7 +34,7 @@ def get_v1_date(versions):
     return None
 
 def ingest_metadata():
-    print(f"Starting ingestion with limit: {LIMIT}")
+    print("Starting ingestion with " + (f"limit: {LIMIT}" if LIMIT else "no limit"))
     
     if not os.path.exists(DATA_PATH):
         print(f"Error: Data file not found at {DATA_PATH}")
@@ -53,13 +53,13 @@ def ingest_metadata():
     # The file is roughly 2.4M lines. If LIMIT is 1000, we want to sample every ~2400th line
 
     ESTIMATED_TOTAL = 2_400_000
-    step_size = max(1, ESTIMATED_TOTAL // LIMIT)
+    step_size = max(1, ESTIMATED_TOTAL // LIMIT) if LIMIT else 1
     
-    print(f"Sampling strategy: Taking 1 paper every {step_size} lines to span the dataset.")
+    print(f"Taking 1 paper every {step_size} lines.")
 
     with open(DATA_PATH, 'r') as f:
         for i, line in enumerate(f):
-            if count >= LIMIT:
+            if LIMIT and count >= LIMIT:
                 break
             
             # Only process if it matches our step
