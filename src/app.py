@@ -13,12 +13,11 @@ def main():
     See how the meaning, context, and disciplinary home of a concept shifts over time.
     """)
 
-    # Sidebar Config
     st.sidebar.header("Configuration")
     mode = st.sidebar.radio("Mode", ["Evolution Analysis", "Paper Search"])
 
     if mode == "Evolution Analysis":
-        st.header("📈 Concept Evolution Analysis")
+        st.header("Concept Evolution Analysis")
         query = st.text_input("Enter a Concept", placeholder="e.g., 'attention', 'entropy', 'neural networks'")
         
         if st.button("Analyze Evolution"):
@@ -32,10 +31,8 @@ def main():
                     if not data:
                         st.error("No data found for this concept in the sampled timeline.")
                     else:
-                        # Process data for visualization
                         df_evolution = pd.DataFrame(data)
                         
-                        # 1. Relevance Over Time
                         st.subheader("1. Semantic Relevance Over Time")
                         st.caption("How closely did papers in each year match your modern query?")
                         fig_rel = px.line(df_evolution, x="year", y="avg_score", markers=True, 
@@ -43,7 +40,6 @@ def main():
                         
                         st.plotly_chart(fig_rel, use_container_width=True)
                         
-                        # 2. Category Evolution (The "Drift")
                         st.subheader("2. Disciplinary Drift (Category Evolution)")
                         st.caption("Which scientific fields were discussing this concept?")
                         
@@ -52,15 +48,10 @@ def main():
                         for entry in data:
                             year = entry['year']
                             for cat in entry['categories']:
-                                # Group sub-categories (e.g., cs.LG -> cs) for cleaner chart? 
-                                # Or keep full for detail. Let's keep full but maybe limit to top 5 overall.
                                 cat_data.append({"year": year, "category": cat})
                         
                         df_cat = pd.DataFrame(cat_data)
-                        # Count category occurrences per year
                         df_cat_counts = df_cat.groupby(['year', 'category']).size().reset_index(name='count')
-                        
-                        # Calculate percentage per year
                         df_cat_counts['percentage'] = df_cat_counts.groupby('year')['count'].transform(lambda x: x / x.sum())
                         
                         fig_area = px.area(df_cat_counts, x="year", y="percentage", color="category",
@@ -69,7 +60,7 @@ def main():
                         st.plotly_chart(fig_area, use_container_width=True)
 
     elif mode == "Paper Search":
-        st.header("🔎 Deep Dive Search")
+        st.header("Deep Dive Search")
         limit = st.sidebar.slider("Results Limit", 5, 50, 10)
         
         col1, col2 = st.columns([3, 1])
