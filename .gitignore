@@ -4,7 +4,7 @@
 *.user
 *.userosscache
 *.sln.docstates
-*.env
+*.env*
 
 .venv
 
