@@ -1,4 +1,4 @@
-import os, sys
+import os
 import time
 from tqdm import tqdm
 from sentence_transformers import SentenceTransformer
@@ -11,10 +11,9 @@ from pymilvus import (
     Collection,
 )
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../src'))
-
-from scet.db import SessionLocal
-from scet.models import Paper
+import _src
+from scet.core.db import SessionLocal
+from scet.core.models import Paper
 
 from dotenv import load_dotenv
 load_dotenv()

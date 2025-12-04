@@ -1,10 +1,9 @@
-import os, sys, json
+import os, json
 from datetime import datetime
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../src'))
-
-from scet.db import SessionLocal, engine
-from scet.models import Paper, Base
+import _src
+from scet.core.db import SessionLocal, engine
+from scet.core.models import Paper, Base
 
 from dotenv import load_dotenv
 load_dotenv()
