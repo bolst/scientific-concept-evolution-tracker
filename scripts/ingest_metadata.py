@@ -1,5 +1,6 @@
 import os, json
 from datetime import datetime
+from tqdm import tqdm
 
 import _src
 from scet.core.db import SessionLocal, engine
@@ -56,6 +57,10 @@ def ingest_metadata(data_path=DATA_PATH, limit=LIMIT):
     
     print(f"Taking 1 paper every {step_size} lines.")
 
+    # Initialize progress bar
+    total_to_process = limit if limit else ESTIMATED_TOTAL
+    pbar = tqdm(total=total_to_process, desc="Ingesting Metadata", unit="paper")
+
     with open(data_path, 'r') as f:
         for i, line in enumerate(f):
             if limit and count >= limit:
@@ -111,12 +116,15 @@ def ingest_metadata(data_path=DATA_PATH, limit=LIMIT):
                 db.merge(paper)
                 count += 1
                 if count % 100 == 0:
-                    print(f"Processed {count} papers...")
                     db.commit()
+                    pbar.update(100)
             except Exception as e:
                 print(f"Error processing {arxiv_id}: {e}")
                 db.rollback()
 
+    # Update remaining count
+    pbar.update(count % 100)
+    pbar.close()
     db.commit()
     db.close()
     print(f"Finished processing total of {count} papers")
