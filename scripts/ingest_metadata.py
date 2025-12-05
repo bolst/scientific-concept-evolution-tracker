@@ -9,8 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-limit_str = os.getenv("DATASET_LIMIT")
-LIMIT = int(limit_str) if limit_str else None
+LIMIT = 1000
 DATA_PATH = os.path.join(os.path.dirname(__file__), '../notebooks/data/arxiv-metadata-oai-snapshot.json')
 
 
@@ -33,8 +32,8 @@ def get_v1_date(versions):
                 return None
     return None
 
-def ingest_metadata(data_path=DATA_PATH):
-    print("Starting ingestion with " + (f"limit: {LIMIT}" if LIMIT else "no limit"))
+def ingest_metadata(data_path=DATA_PATH, limit=LIMIT):
+    print("Starting ingestion with " + (f"limit: {limit}" if limit else "no limit"))
     
     if not os.path.exists(data_path):
         print(f"Error: Data file not found at {data_path}")
@@ -50,16 +49,16 @@ def ingest_metadata(data_path=DATA_PATH):
     
     # want to sample for a diverse set of years...
     # Strategy: skip N records between each ingestion to sample across the file (assuming file is sorted by year)
-    # The file is roughly 2.4M lines. If LIMIT is 1000, we want to sample every ~2400th line
+    # The file is roughly 2.4M lines. If limit is 1000, we want to sample every ~2400th line
 
     ESTIMATED_TOTAL = 2_400_000
-    step_size = max(1, ESTIMATED_TOTAL // LIMIT) if LIMIT else 1
+    step_size = max(1, ESTIMATED_TOTAL // limit) if limit else 1
     
     print(f"Taking 1 paper every {step_size} lines.")
 
     with open(data_path, 'r') as f:
         for i, line in enumerate(f):
-            if LIMIT and count >= LIMIT:
+            if limit and count >= limit:
                 break
             
             # Only process if it matches our step
@@ -126,6 +125,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Ingest ArXiv metadata into the database.")
     parser.add_argument("--data-path", type=str, default=DATA_PATH, help="Path to the arxiv metadata json file")
+    parser.add_argument("--limit", type=int, default=None, help="Limit of metadata to process. Will attempt to sample the amount of data over all available years.")
     args = parser.parse_args()
     
-    ingest_metadata(args.data_path)
+    ingest_metadata(args.data_path, args.limit)
