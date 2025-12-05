@@ -175,7 +175,7 @@ def chunked_iterable(iterable, size):
         if len(chunk) < size:
             break
 
-def generate_embeddings():
+def generate_embeddings(batch_size=BATCH_SIZE):
     connect_milvus()
     collection = create_collection_if_not_exists()
     collection.load() 
@@ -186,21 +186,35 @@ def generate_embeddings():
     total_papers = db.query(Paper).count()
     print(f"Total papers in DB: {total_papers}")
     
-    # stream results from DB instead of loading all at once
-    paper_stream = db.query(Paper).yield_per(1000)
+    offset = 0
+    pbar = tqdm(total=total_papers)
     
-    # Process in batches
-    # Use a larger batch size for DB/Milvus checks (e.g. 100)
-    # Embedding model batching is handled inside process_batch if needed, 
-    # but here we just pass 100 papers to process_batch.
-    # SPECTER2 can handle 20-30 easily... 100 might be slow on CPU
-    for batch in tqdm(chunked_iterable(paper_stream, BATCH_SIZE), total=total_papers//BATCH_SIZE):
-        process_batch(batch, collection, model, db)
-    db.commit()
+    while True:
+        # get batch via pagination
+        batch_papers = db.query(Paper).order_by(Paper.arxiv_id).limit(batch_size).offset(offset).all()
+        
+        # if none, then we have processed all and we are done
+        if not batch_papers:
+            break
+            
+        process_batch(batch_papers, collection, model, db)
+        
+        # Commit after each batch
+        db.commit()
+        
+        offset += batch_size
+        pbar.update(len(batch_papers))
+        
+    pbar.close()
         
     print("Done generating and inserting embeddings")
     collection.flush()
     print(f"Collection row count: {collection.num_entities}")
 
 if __name__ == "__main__":
-    generate_embeddings()
+    import argparse
+    parser = argparse.ArgumentParser(description="Generate embeddings for papers.")
+    parser.add_argument("--batch-size", type=int, default=BATCH_SIZE, help="Batch size for processing papers")
+    args = parser.parse_args()
+    
+    generate_embeddings(args.batch_size)
