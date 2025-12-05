@@ -33,11 +33,11 @@ def get_v1_date(versions):
                 return None
     return None
 
-def ingest_metadata():
+def ingest_metadata(data_path=DATA_PATH):
     print("Starting ingestion with " + (f"limit: {LIMIT}" if LIMIT else "no limit"))
     
-    if not os.path.exists(DATA_PATH):
-        print(f"Error: Data file not found at {DATA_PATH}")
+    if not os.path.exists(data_path):
+        print(f"Error: Data file not found at {data_path}")
         return
 
     db = SessionLocal()
@@ -57,7 +57,7 @@ def ingest_metadata():
     
     print(f"Taking 1 paper every {step_size} lines.")
 
-    with open(DATA_PATH, 'r') as f:
+    with open(data_path, 'r') as f:
         for i, line in enumerate(f):
             if LIMIT and count >= LIMIT:
                 break
@@ -123,4 +123,9 @@ def ingest_metadata():
     print(f"Finished processing total of {count} papers")
 
 if __name__ == "__main__":
-    ingest_metadata()
+    import argparse
+    parser = argparse.ArgumentParser(description="Ingest ArXiv metadata into the database.")
+    parser.add_argument("--data-path", type=str, default=DATA_PATH, help="Path to the arxiv metadata json file")
+    args = parser.parse_args()
+    
+    ingest_metadata(args.data_path)
