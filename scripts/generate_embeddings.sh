@@ -1,7 +1,20 @@
 #!/bin/bash
+#SBATCH --job-name=scet_embed
+#SBATCH --partition=cpunodes
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=32G
+#SBATCH --output=logs/embedding_%j.out
+#SBATCH --error=logs/embedding_%j.err
+#SBATCH --time=24:00:00
+
+# example command: sbatch scripts/generate_embeddings.sh
 
 # ensure we are in the project root
-cd "$(dirname "$0")/.."
+if [ -n "$SLURM_SUBMIT_DIR" ]; then
+    cd "$SLURM_SUBMIT_DIR"
+else
+    cd "$(dirname "$0")/.."
+fi
 
 echo "Current directory: $(pwd)"
 
