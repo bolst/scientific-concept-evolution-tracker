@@ -1,6 +1,7 @@
 import os
 import time
 import warnings
+import numpy as np
 from tqdm import tqdm
 from sentence_transformers import SentenceTransformer
 from pymilvus import (
@@ -19,9 +20,8 @@ from scet.core.models import Paper
 from dotenv import load_dotenv
 load_dotenv()
 
+DEFAULT_BATCH_SIZE = 1000
 
-
-BATCH_SIZE = 20 # batch size of papers to generate embeddings for
 MILVUS_HOST = os.getenv("MILVUS_HOST", "localhost")
 MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
 COLLECTION_NAME = os.getenv("MILVUS_COLLECTION_NAME", "scientific_concepts")
@@ -72,7 +72,7 @@ def load_model():
     model = SentenceTransformer(EMBEDDING_MODEL)
     return model
 
-def process_batch(batch_papers, collection, model, db):
+def process_batch(batch_papers, collection, model, db, pool=None):
     if not batch_papers:
         return
 
@@ -85,9 +85,9 @@ def process_batch(batch_papers, collection, model, db):
     # ensure that papers marked as "embedded" are actually embedded
     if ids_to_check:
         # query Milvus to see which of these IDs already exist
-        # this should be fine for batch sizes ~1000
-        if (batch_size := len(batch_papers)) > 1000:
-            warnings.warn(f"Batch size is {batch_size} > 1000... this may cause performance issues")
+        # this should be fine for batch sizes ~2000
+        if (batch_size := len(batch_papers)) > 2000:
+            warnings.warn(f"Batch size is {batch_size} > 2000... this may cause performance issues with Milvus query")
         try:
             formatted_ids = [f'"{bid}"' for bid in ids_to_check]
             expr = f"arxiv_id in [{', '.join(formatted_ids)}]"
@@ -117,7 +117,13 @@ def process_batch(batch_papers, collection, model, db):
         sep_token = getattr(model.tokenizer, 'sep_token', ' ') or ' '
         text = title + sep_token + abstract 
         texts.append(text)
-    embeddings = model.encode(texts, convert_to_tensor=False, normalize_embeddings=True)
+    
+    embeddings = model.encode(
+        texts, 
+        pool=pool,
+        convert_to_tensor=False, 
+        normalize_embeddings=True
+    )
 
     # prepare data for Milvus
     mr_arxiv_ids = []
@@ -130,13 +136,18 @@ def process_batch(batch_papers, collection, model, db):
     
     for j, p in enumerate(papers_to_process):
         mr_arxiv_ids.append(p.arxiv_id)
-        mr_chunk_indices.append(0) 
-        mr_embeddings.append(embeddings[j])
+        mr_chunk_indices.append(0) # in case I want to encode full paper later on
+        # Ensure embedding is a list for Milvus
+        emb = embeddings[j]
+        if isinstance(emb, np.ndarray):
+            emb = emb.tolist()
+        mr_embeddings.append(emb)
         mr_years.append(p.published_date.year if p.published_date else 2000)
         mr_timestamps.append(int(time.mktime(p.published_date.timetuple())) if p.published_date else 0)
+        # simple hash for category
         mr_category_tags.append(hash(p.primary_category) % 10000 
                                 if p.primary_category 
-                                else 0) # simple hash for category
+                                else 0)
         mr_citation_counts.append(0) # TODO: may not even need this
 
     data = [
@@ -157,64 +168,68 @@ def process_batch(batch_papers, collection, model, db):
     
     # update DB
     for p in papers_to_process:
-        p.processed_status = 'embedded'
-    # db.commit()
+        p.processed_status = "embedded"
 
-def chunked_iterable(iterable, size):
-    """Yields chunks of an iterable"""
-    it = iter(iterable)
-    while True:
-        chunk = []
-        try:
-            for _ in range(size):
-                chunk.append(next(it))
-        except StopIteration:
-            pass
-        if chunk:
-            yield chunk
-        if len(chunk) < size:
-            break
-
-def generate_embeddings(batch_size=BATCH_SIZE):
+def generate_embeddings(batch_size=DEFAULT_BATCH_SIZE, num_workers=1):
     connect_milvus()
     collection = create_collection_if_not_exists()
     collection.load() 
     model = load_model()
     db = SessionLocal()
     
-    # for progress bar
-    total_papers = db.query(Paper).count()
-    print(f"Total papers in DB: {total_papers}")
+    # initialize multiprocessing pool if requested
+    pool = None
+    if num_workers > 1:
+        print(f"Starting {num_workers} worker processes for embedding generation...")
+        pool = model.start_multi_process_pool(target_devices=['cpu'] * num_workers)
     
-    offset = 0
-    pbar = tqdm(total=total_papers)
-    
-    while True:
-        # get batch via pagination
-        batch_papers = db.query(Paper).order_by(Paper.arxiv_id).limit(batch_size).offset(offset).all()
+    try:
+        # for progress bar
+        total_papers = db.query(Paper).count()
+        print(f"Total papers in DB: {total_papers}")
         
-        # if none, then we have processed all and we are done
-        if not batch_papers:
-            break
+        pbar = tqdm(total=total_papers)
+        
+        last_seen_id = None
+        base_query = db.query(Paper).order_by(Paper.arxiv_id)
+        while True:
+            # query paper batch
+            query = base_query
+            if last_seen_id:
+                query = base_query.filter(Paper.arxiv_id > last_seen_id)
+            batch_papers = query.limit(batch_size).all()
             
-        process_batch(batch_papers, collection, model, db)
+            # if none, then we have processed all and we are done
+            if not batch_papers:
+                break
+            
+            # Update for next iteration
+            last_seen_id = batch_papers[-1].arxiv_id
+                
+            # Process and commit each batch
+            process_batch(batch_papers, collection, model, db, pool)
+            db.commit()
+            
+            pbar.update(len(batch_papers))
+            
+        pbar.close()
+            
+        print("Done generating and inserting embeddings")
+        collection.flush()
+        print(f"Collection row count: {collection.num_entities}")
         
-        # Commit after each batch
-        db.commit()
-        
-        offset += batch_size
-        pbar.update(len(batch_papers))
-        
-    pbar.close()
-        
-    print("Done generating and inserting embeddings")
-    collection.flush()
-    print(f"Collection row count: {collection.num_entities}")
+    finally:
+        if pool:
+            print("Stopping worker pool...")
+            model.stop_multi_process_pool(pool)
+        db.close()
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Generate embeddings for papers.")
-    parser.add_argument("--batch-size", type=int, default=BATCH_SIZE, help="Batch size for processing papers")
+    parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE, help="Batch size for processing papers")
+    parser.add_argument("--num-workers", type=int, default=1, help="Number of worker processes for embedding generation")
     args = parser.parse_args()
     
-    generate_embeddings(args.batch_size)
+    print(f"Generating embeddings with batch_size={args.batch_size}, num_workers={args.num_workers}")
+    generate_embeddings(args.batch_size, args.num_workers)
