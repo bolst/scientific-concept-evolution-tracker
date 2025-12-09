@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Text, Date, Enum, ForeignKey, Table
+from sqlalchemy import Column, Integer, Text, Date, Enum, ForeignKey, Table, Index, text
 from sqlalchemy.orm import relationship, declarative_base
 
 
@@ -9,13 +9,16 @@ paper_authors = Table(
     'paper_authors',
     Base.metadata,
     Column('paper_id', Text, ForeignKey('papers.arxiv_id'), primary_key=True),
-    Column('author_id', Integer, ForeignKey('authors.author_id'), primary_key=True),
-    Column('rank', Integer)
+    Column('author_id', Integer, ForeignKey('authors.author_id'), primary_key=True)
 )
 
 
 class Paper(Base):
     __tablename__ = 'papers'
+    __table_args__ = (
+        Index('idx__primary_category', text('primary_category text_pattern_ops ASC NULLS LAST'), postgresql_using='btree', postgresql_with={'deduplicate_items': 'true'}),
+        Index('idx__arxiv_id', text('arxiv_id text_pattern_ops ASC NULLS LAST'), postgresql_using='btree', postgresql_with={'deduplicate_items': 'true'})
+    )
 
     arxiv_id = Column(Text, primary_key=True)
     title = Column(Text)
