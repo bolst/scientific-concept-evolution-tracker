@@ -1,4 +1,13 @@
 import os
+
+# Set environment variables to prevent thread contention in multiprocessing
+# This must be done before importing libraries that use OpenMP/MKL (like numpy/torch)
+#os.environ["OMP_NUM_THREADS"] = "1"
+#os.environ["MKL_NUM_THREADS"] = "1"
+#os.environ["OPENBLAS_NUM_THREADS"] = "1"
+#os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+#os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
 import time
 import warnings
 import numpy as np
