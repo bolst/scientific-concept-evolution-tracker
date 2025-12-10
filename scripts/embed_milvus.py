@@ -2,28 +2,41 @@ from utilities.embeddings import EmbeddingGenerator
 from utilities.metadata import MetadataProvider
 from utilities.milvus import MilvusProvider
 from tqdm import tqdm
+import argparse
 
 
-def main():
+def main(shard_id: int, num_shards: int, batch_size: int):
     meta = MetadataProvider()
     embedder = EmbeddingGenerator()
     milvus = MilvusProvider()
     
-    total_papers = meta.get_pending_paper_count()
-    print(f"Processing {total_papers} papers...")
+    total_papers = meta.get_pending_paper_count(shard_id=shard_id, num_shards=num_shards)
+    print(f"Processing {total_papers} papers (Shard {shard_id}/{num_shards})...")
+    
     print("=" * 50)
 
     with tqdm(total=total_papers, unit="papers") as pbar:
-        for df in meta.get_pending_papers_batch(batch_size=100):
-            # filter out papers that are already embedded
+        for df in meta.get_pending_papers_batch(batch_size=batch_size, shard_id=shard_id, num_shards=num_shards):
+            # Filter out papers that are already embedded
             pending_ids = milvus.filter_existing_ids(df['arxiv_id'].tolist())
-            if pending_ids and len(pending_ids) > 0:
-                df_filtered = df[df['arxiv_id'].isin(pending_ids)].copy()
-                embedding = embedder.generate_embeddings(df_filtered)
-                milvus.prepare_and_ingest(embedding)
-            # update progress bar
+            
+            if not pending_ids:
+                pbar.update(len(df))
+                continue
+                
+            df_filtered = df[df['arxiv_id'].isin(pending_ids)].copy()
+            
+            embedding = embedder.generate_embeddings(df_filtered)
+            milvus.prepare_and_ingest(embedding)
+            
             pbar.update(len(df))
     
     
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description="Embed papers and ingest into Milvus")
+    parser.add_argument("--shard-id", type=int, default=0, help="Shard ID for parallelism (0-indexed)")
+    parser.add_argument("--num-shards", type=int, default=1, help="Total number of shards")
+    parser.add_argument("--batch-size", type=int, default=100, help="Batch size per iteration")
+    args = parser.parse_args()
+
+    main(args.shard_id, args.num_shards, args.batch_size)

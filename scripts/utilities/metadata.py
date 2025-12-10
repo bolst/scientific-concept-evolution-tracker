@@ -17,21 +17,23 @@ class MetadataProvider:
         self.engine = create_engine(self.database_url)
         print(f"Connected to PostgreSQL at {host}:{port}/{dbname}")
         
-    def get_pending_paper_count(self) -> int:
+    def get_pending_paper_count(self, shard_id: int = 0, num_shards: int = 1) -> int:
         """
         Gets number of pending (unembedded) papers in the database.
         """
-        sql = """
-        SELECT count(*) FROM papers WHERE processed_status = 'pending'
+        sql = f"""
+        SELECT count(*) FROM papers 
+        WHERE processed_status = 'pending'
+        AND ABS(hashtext(arxiv_id)) % {num_shards} = {shard_id}
         """
         with self.engine.connect() as connection:
             return int(connection.execute(text(sql)).scalar())
 
-    def get_pending_papers_batch(self, batch_size: int = 1000):
+    def get_pending_papers_batch(self, batch_size: int = 1000, shard_id: int = 0, num_shards: int = 1):
         """
         Generator that yields batches of pending (unembedded) papers from the database.
         """
-        sql = """
+        sql = f"""
         SELECT
             arxiv_id,
             title,
@@ -43,6 +45,7 @@ class MetadataProvider:
             papers
         WHERE
             processed_status = 'pending'
+            AND ABS(hashtext(arxiv_id)) % {num_shards} = {shard_id}
         """
         with self.engine.connect().execution_options(stream_results=True) as connection:
             for chunk in pd.read_sql(sql, connection, chunksize=batch_size):
