@@ -17,7 +17,8 @@ class Paper(Base):
     __tablename__ = 'papers'
     __table_args__ = (
         Index('idx__primary_category', text('primary_category text_pattern_ops ASC NULLS LAST'), postgresql_using='btree', postgresql_with={'deduplicate_items': 'true'}),
-        Index('idx__arxiv_id', text('arxiv_id text_pattern_ops ASC NULLS LAST'), postgresql_using='btree', postgresql_with={'deduplicate_items': 'true'})
+        Index('idx__arxiv_id', text('arxiv_id text_pattern_ops ASC NULLS LAST'), postgresql_using='btree', postgresql_with={'deduplicate_items': 'true'}),
+        Index('idx__processed_status', text('processed_status text_pattern_ops ASC NULLS LAST'), postgresql_using='btree', postgresql_with={'deduplicate_items': 'true'}),
     )
 
     arxiv_id = Column(Text, primary_key=True)
