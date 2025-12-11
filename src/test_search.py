@@ -16,7 +16,7 @@ print(f"Returned dataframe of shape {df.shape}")
 print(df.head())
 
 cl = PaperCluster(milvus, embedder)
-concepts, labels = cl.get_clustered_concepts(df)
+concepts, labels, n_clusters = cl.get_clustered_concepts(df)
 print("\nIdentified Concepts:")
 for cid, label in labels.items():
     count = len(concepts[concepts['cluster'] == cid])

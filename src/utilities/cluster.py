@@ -50,14 +50,15 @@ class PaperCluster:
         self,
         search_results_df: pd.DataFrame,
         n_clusters: int | None = None
-        ) -> tuple[pd.DataFrame, dict]:
+        ) -> tuple[pd.DataFrame, dict, int]:
         """
-        Clusters search results into sub-concepts and tracks them over time
+        Clusters search results into sub-concepts and tracks them over time.
+        Returns tuple of [cluster dataframe, cluster labels {clusterid:label}, number clusters used]
         """
         
         if search_results_df.empty:
             warn("search_results_df is empty, returning empty tuple")
-            return pd.DataFrame(), {}
+            return pd.DataFrame(), {}, n_clusters
         
         if n_clusters is None or n_clusters < 2:
             n_clusters = self.get_optimal_cluster_count(search_results_df['arxiv_id'].tolist())
@@ -77,7 +78,7 @@ class PaperCluster:
         
         if len(df) < n_clusters:
             print(f"Not enough data points ({len(df)}) for {n_clusters} clusters.")
-            return df, {}
+            return df, {}, n_clusters
 
         # build clusters from dense vectors
         print(f"Clustering {len(df)} papers into {n_clusters} concepts...")
@@ -110,5 +111,5 @@ class PaperCluster:
             cluster_labels[cluster_id] = label
             
         df['cluster_label'] = df['cluster'].map(cluster_labels)
-        return df, cluster_labels
+        return df, cluster_labels, n_clusters
 
