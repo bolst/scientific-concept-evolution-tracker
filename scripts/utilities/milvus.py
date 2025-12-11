@@ -1,13 +1,12 @@
-from pymilvus import connections, FieldSchema, CollectionSchema, DataType, Collection, utility
+from pymilvus import connections, FieldSchema, CollectionSchema, DataType, Collection
 from dotenv import load_dotenv
 from warnings import warn
-from tqdm import tqdm
 import pandas as pd
 import os
 import hashlib
 
 
-DEFAULT_COLLECTION_NAME = "arxiv_embeddings_test"
+DEFAULT_COLLECTION_NAME = "arxiv_embeddings"
 
 
 def hash_to_int64(s: str) -> int:
@@ -91,7 +90,6 @@ class MilvusProvider:
             "partition_key": []
         }
                 
-        #for _, row in tqdm(df.iterrows(), total=len(df)):
         for _, row in df.iterrows():
             try:
                 p_id = hash_to_int64(row['arxiv_id'])

@@ -1,7 +1,4 @@
-from tqdm import tqdm
-import numpy as np
 import pandas as pd
-from ast import literal_eval
 import torch
 from transformers import AutoTokenizer, AutoModelForMaskedLM
 from sentence_transformers import SentenceTransformer
@@ -53,7 +50,5 @@ class EmbeddingGenerator:
         df['dense_vector'] = list(
             self.generate_dense_embeddings(df['specter_input'].tolist()).cpu().numpy()
         )
-        
-        #tqdm.pandas()
         df['sparse_vector'] = df['specter_input'].apply(self.generate_sparse_embedding)
         return df
