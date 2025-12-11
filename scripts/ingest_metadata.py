@@ -6,9 +6,8 @@ import os, json
 from datetime import datetime
 from tqdm import tqdm
 
-import _src
-from scet.core.db import SessionLocal, engine
-from scet.core.models import Paper, Base
+from core.db import SessionLocal, engine
+from core.models import Paper, Base
 
 from dotenv import load_dotenv
 load_dotenv()

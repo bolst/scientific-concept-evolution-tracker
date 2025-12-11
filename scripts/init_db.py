@@ -1,6 +1,5 @@
-import _src
-from scet.core.models import Base
-from scet.core.db import engine
+from core.models import Base
+from core.db import engine
 
 def init_db():
     print("Creating database tables...")
