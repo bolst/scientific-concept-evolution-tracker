@@ -3,9 +3,8 @@
 #SBATCH --array=0-9                 # Run 10 parallel jobs
 #SBATCH --output=logs/embed_%a.log  # Log file per array task
 #SBATCH --cpus-per-task=4           # CPUs per task
-#SBATCH --mem=16G                   # Memory per task
-#SBATCH --time=24:00:00             # Max runtime
-#SBATCH --gres=gpu:1                # Request 1 GPU per task
+#SBATCH --mem=32G                   # Memory per task
+#SBATCH --time=72:00:00             # Max runtime
 
 mkdir -p logs
 
