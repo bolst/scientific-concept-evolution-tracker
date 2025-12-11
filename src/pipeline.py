@@ -29,7 +29,7 @@ class SCETPipeline:
     
     def __init__(self):
         self.metadata = MetadataProvider()
-        self.milvus = MilvusProvider(collection_name='arxiv_embeddings_test')
+        self.milvus = MilvusProvider()
         self.embedder = EmbeddingGenerator()
         
         self.search = HybridSearch(self.metadata, self.milvus, self.embedder)

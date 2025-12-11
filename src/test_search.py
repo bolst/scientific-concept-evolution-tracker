@@ -10,7 +10,7 @@ from utilities.cluster import PaperCluster
 import utilities.aggregate as agg
 
 meta = MetadataProvider()
-milvus = MilvusProvider(collection_name='arxiv_embeddings_test')
+milvus = MilvusProvider()
 embedder = EmbeddingGenerator()
 
 hs = HybridSearch(meta, milvus, embedder)
