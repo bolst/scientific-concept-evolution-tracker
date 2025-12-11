@@ -1,3 +1,8 @@
+'''
+The sole purpose of this script is to send myself a text with an N8N flow I have set up.
+I only use this so I can be notified when the slurm jobs I submit are complete.
+'''
+
 import requests
 import os
 from dotenv import load_dotenv
