@@ -1,3 +1,7 @@
+'''
+Script to ingest arXiv metadata file (from Kaggle) to database.
+'''
+
 import os, json
 from datetime import datetime
 from tqdm import tqdm
