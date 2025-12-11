@@ -30,7 +30,7 @@ echo "Running shard $SLURM_ARRAY_TASK_ID of $NUM_SHARDS"
 uv run src/embed_milvus.py \
     --shard-id $SLURM_ARRAY_TASK_ID \
     --num-shards $NUM_SHARDS \
-    --batch-size 1000
+    --batch-size 500
 
 EXIT_CODE=$?
 
