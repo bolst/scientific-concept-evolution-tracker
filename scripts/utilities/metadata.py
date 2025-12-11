@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from pandas import Series
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
@@ -50,3 +51,12 @@ class MetadataProvider:
         with self.engine.connect().execution_options(stream_results=True) as connection:
             for chunk in pd.read_sql(text(sql), connection, chunksize=batch_size):
                 yield chunk
+                
+    def get_papers_with_ids(self, arxiv_ids: Series):
+        ids_str = f"({ ", ".join("'" + arxiv_ids + "'") })"
+        sql = f"""
+        SELECT arxiv_id, title, abstract, primary_category, published_date
+        FROM papers WHERE arxiv_id IN {ids_str}
+        """
+        with self.engine.connect() as connection:
+            return connection.execute(text(sql)).fetchall()
