@@ -5,6 +5,7 @@
 #SBATCH --cpus-per-task=4           # CPUs per task
 #SBATCH --mem=32G                   # Memory per task
 #SBATCH --time=72:00:00             # Max runtime
+#SBATCH --gres=gpu:1                # Request 1 GPU per task
 
 mkdir -p logs
 
@@ -36,9 +37,15 @@ EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 0 ]; then
     echo "Task $SLURM_ARRAY_TASK_ID completed successfully."
-    uv run scripts/send_text.py "SCET: Embedding generation job completed successfully."
+    # Only send text for the first task to avoid spam
+    if [ "$SLURM_ARRAY_TASK_ID" -eq 0 ]; then
+        uv run scripts/send_text.py "SCET: Embedding generation job (Task 0) completed successfully."
+    fi
 else
     echo "Task $SLURM_ARRAY_TASK_ID failed with exit code $EXIT_CODE."
-    uv run scripts/send_text.py "SCET: Embedding generation job FAILED with exit code $EXIT_CODE."
+    # Only send text for the first task to avoid spam
+    if [ "$SLURM_ARRAY_TASK_ID" -eq 0 ]; then
+        uv run scripts/send_text.py "SCET: Embedding generation job (Task 0) FAILED with exit code $EXIT_CODE."
+    fi
     exit $EXIT_CODE
 fi
