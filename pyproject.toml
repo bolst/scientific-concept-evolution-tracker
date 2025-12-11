@@ -21,4 +21,5 @@ dependencies = [
     "sqlalchemy-orm>=1.2.10",
     "tool>=0.8.0",
     "plotly>=6.5.0",
+    "streamlit>=1.52.1",
 ]
