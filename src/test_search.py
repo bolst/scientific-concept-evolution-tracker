@@ -2,6 +2,9 @@ from utilities.embeddings import EmbeddingGenerator
 from utilities.metadata import MetadataProvider
 from utilities.milvus import MilvusProvider
 
+import logging
+logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s][%(name)s] %(message)s')
+
 from utilities.search import HybridSearch
 from utilities.cluster import PaperCluster
 import utilities.aggregate as agg

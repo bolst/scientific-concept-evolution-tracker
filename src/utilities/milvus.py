@@ -4,6 +4,9 @@ from warnings import warn
 import pandas as pd
 import os
 import hashlib
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 DEFAULT_COLLECTION_NAME = "arxiv_embeddings"
@@ -31,10 +34,10 @@ class MilvusProvider:
         self.milvus_host = os.environ["MILVUS_HOST"]
         self.milvus_port = os.environ["MILVUS_PORT"]
         connections.connect("default", host=self.milvus_host, port=self.milvus_port)
-        print(f"Connected to Milvus at {self.milvus_host}:{self.milvus_port}")
+        logger.info(f"Connected to Milvus at {self.milvus_host}:{self.milvus_port}")
         self.collection = self._get_collection()
         self.collection.load()
-        print(f"Collection '{self.collection.name}' loaded.")
+        logger.info(f"Collection '{self.collection.name}' loaded.")
 
     
     def _get_collection(self):

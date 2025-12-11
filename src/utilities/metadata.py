@@ -3,6 +3,9 @@ import pandas as pd
 from pandas import Series
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
+import logging
+
+logger = logging.getLogger(__name__)
 
 class MetadataProvider:
     def __init__(self):
@@ -16,7 +19,7 @@ class MetadataProvider:
         
         self.database_url = f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
         self.engine = create_engine(self.database_url)
-        print(f"Connected to PostgreSQL at {host}:{port}/{dbname}")
+        logger.info(f"Connected to PostgreSQL at {host}:{port}/{dbname}")
         
     def get_pending_paper_count(self, shard_id: int = 0, num_shards: int = 1) -> int:
         """

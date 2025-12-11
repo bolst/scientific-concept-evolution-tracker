@@ -6,7 +6,9 @@ from sklearn.cluster import KMeans, MiniBatchKMeans
 from collections import defaultdict
 import numpy as np
 import pandas as pd
+import logging
 
+logger = logging.getLogger(__name__)
 
 
 class PaperCluster:
@@ -32,14 +34,14 @@ class PaperCluster:
         
         scores = []
         ks = range(2, min(max_k + 1, len(matrix)))
-        print(f"Evaluating cluster counts from {ks[0]} to {ks[-1]}...")
-        print("Silhouette Scores:")
+        logger.info(f"Evaluating cluster counts from {ks[0]} to {ks[-1]}...")
+        logger.debug("Silhouette Scores:")
         for k in ks:
             kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
             labels = kmeans.fit_predict(matrix)
             score = silhouette_score(matrix, labels)
             scores.append(score)
-            print(f"\tk={k}: {score:.4f}")
+            logger.debug(f"\tk={k}: {score:.4f}")
             
         best_k = ks[np.argmax(scores)]
         return best_k
@@ -62,7 +64,7 @@ class PaperCluster:
         
         if n_clusters is None or n_clusters < 2:
             n_clusters = self.get_optimal_cluster_count(search_results_df['arxiv_id'].tolist())
-            print(f"Determined {n_clusters} to be number of optimal clusters")
+            logger.info(f"Determined {n_clusters} to be number of optimal clusters")
 
         # fetch vectors from Milvus for the given papers
         paper_ids = search_results_df['arxiv_id'].apply(hash_to_int64).tolist()
@@ -77,11 +79,11 @@ class PaperCluster:
         df = search_results_df.merge(vectors_df, on='arxiv_id')
         
         if len(df) < n_clusters:
-            print(f"Not enough data points ({len(df)}) for {n_clusters} clusters.")
+            logger.warning(f"Not enough data points ({len(df)}) for {n_clusters} clusters.")
             return df, {}, n_clusters
 
         # build clusters from dense vectors
-        print(f"Clustering {len(df)} papers into {n_clusters} concepts...")
+        logger.info(f"Clustering {len(df)} papers into {n_clusters} concepts...")
         matrix = np.stack(df['dense_vector'].values)
         
         # scikit recommends using MiniBatchKMeans if > 10000 samples
@@ -92,7 +94,7 @@ class PaperCluster:
         
         # build cluster labels with sparse vectors
         cluster_labels = {}
-        print("Generating cluster labels...")
+        logger.info("Generating cluster labels...")
         for cluster_id in range(n_clusters):
             cluster = df[df['cluster'] == cluster_id]
             
