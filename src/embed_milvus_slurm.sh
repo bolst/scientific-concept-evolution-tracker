@@ -27,7 +27,7 @@ fi
 
 echo "Running shard $SLURM_ARRAY_TASK_ID of $NUM_SHARDS"
 
-uv run scripts/embed_milvus.py \
+uv run src/embed_milvus.py \
     --shard-id $SLURM_ARRAY_TASK_ID \
     --num-shards $NUM_SHARDS \
     --batch-size 1000
@@ -38,13 +38,13 @@ if [ $EXIT_CODE -eq 0 ]; then
     echo "Task $SLURM_ARRAY_TASK_ID completed successfully."
     # Only send text for the first task to avoid spam
     if [ "$SLURM_ARRAY_TASK_ID" -eq 0 ]; then
-        uv run scripts/send_text.py "SCET: Embedding generation job (Task 0) completed successfully."
+        uv run src/send_text.py "SCET: Embedding generation job (Task 0) completed successfully."
     fi
 else
     echo "Task $SLURM_ARRAY_TASK_ID failed with exit code $EXIT_CODE."
     # Only send text for the first task to avoid spam
     if [ "$SLURM_ARRAY_TASK_ID" -eq 0 ]; then
-        uv run scripts/send_text.py "SCET: Embedding generation job (Task 0) FAILED with exit code $EXIT_CODE."
+        uv run src/send_text.py "SCET: Embedding generation job (Task 0) FAILED with exit code $EXIT_CODE."
     fi
     exit $EXIT_CODE
 fi
