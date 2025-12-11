@@ -48,5 +48,5 @@ class MetadataProvider:
             AND ABS(hashtext(arxiv_id)) % {num_shards} = {shard_id}
         """
         with self.engine.connect().execution_options(stream_results=True) as connection:
-            for chunk in pd.read_sql(sql, connection, chunksize=batch_size):
+            for chunk in pd.read_sql(text(sql), connection, chunksize=batch_size):
                 yield chunk
