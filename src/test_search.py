@@ -3,7 +3,7 @@ from utilities.metadata import MetadataProvider
 from utilities.milvus import MilvusProvider
 
 import logging
-logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s][%(name)s] %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='[%(asctime)s][%(levelname)s][%(name)s] %(message)s')
 
 from utilities.search import HybridSearch
 from utilities.cluster import PaperCluster

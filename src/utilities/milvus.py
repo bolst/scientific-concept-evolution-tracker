@@ -30,17 +30,14 @@ class MilvusProvider:
     def __init__(self, collection_name: str = DEFAULT_COLLECTION_NAME):
         load_dotenv()
 
-        self.collection_name = collection_name
         self.milvus_host = os.environ["MILVUS_HOST"]
         self.milvus_port = os.environ["MILVUS_PORT"]
         connections.connect("default", host=self.milvus_host, port=self.milvus_port)
         logger.info(f"Connected to Milvus at {self.milvus_host}:{self.milvus_port}")
-        self.collection = self._get_collection()
-        self.collection.load()
-        logger.info(f"Collection '{self.collection.name}' loaded.")
+        self.collection = self._get_collection(collection_name)
 
     
-    def _get_collection(self):
+    def _get_collection(self, collection_name: str):
         '''
         The following is an upsert. No duplicates will be created.
         '''
@@ -53,27 +50,53 @@ class MilvusProvider:
             FieldSchema(name="partition_key", dtype=DataType.INT64, is_partition_key=True, description="Hash of Year + Domain"),
         ]
         schema = CollectionSchema(fields, "ArXiv Collection")
-        collection = Collection(self.collection_name, schema)
-        collection.create_index(field_name="dense_vector", index_params={
+        collection = Collection(collection_name, schema)
+        return collection
+
+    def create_indices(self):
+        """
+        Builds indices for the collection. 
+        This should be called AFTER bulk ingestion to avoid memory overhead and slowdowns.
+        """
+        logger.info(('=' * 20) + f"Building indices for collection '{self.collection.name}'\n" + ('=' * 20))
+        logger.info("Building Dense Vector Index (HNSW)...")
+        self.collection.create_index(field_name="dense_vector", index_params={
             "metric_type": "COSINE",
             "index_type": "HNSW",
             "params": {"M": 16, "efConstruction": 200}
         })
-        collection.create_index(field_name="sparse_vector", index_params={
+        
+        logger.info("Building Sparse Vector Index...")
+        self.collection.create_index(field_name="sparse_vector", index_params={
             "metric_type": "IP", # Inner Product is standard for sparse
             "index_type": "SPARSE_INVERTED_INDEX",
             "params": {"drop_ratio_build": 0.2}
         })
-        collection.create_index(field_name="publication_year", index_name="year_index")
-        collection.create_index(field_name="paper_id", index_name="paper_id_index")
-        return collection
+        
+        logger.info("Building Scalar Indices...")
+        self.collection.create_index(field_name="publication_year", index_name="year_index")
+        self.collection.create_index(field_name="paper_id", index_name="paper_id_index")
+        logger.info("All indices successfully built!")
     
+    
+    # can probably delete this. need to verify first
     def filter_existing_ids(self, arxiv_ids: list[str]) -> list[str]:
         """
         Checks Milvus for existing IDs and returns only the ones that are NOT in the database.
+        Requires collection to be loaded.
         """
         if not arxiv_ids:
             return []
+            
+        # Ensure collection is loaded for query
+        try:
+            logger.info(f"Loading collection '{self.collection.name}'...")
+            self.collection.load()
+            logger.info(f"Collection '{self.collection.name}' successfully loaded.")
+        except Exception as e:
+            logger.warning(f"Failed to load collection for filtering: {e}")
+            return arxiv_ids
+
         hashed_ids = [hash_to_int64(aid) for aid in arxiv_ids]
         res = self.collection.query(
             expr=f"paper_id in {hashed_ids}",
@@ -82,6 +105,7 @@ class MilvusProvider:
         existing_ids = set(item['arxiv_id'] for item in res)
         # return IDs NOT in existing set
         return [aid for aid in arxiv_ids if aid not in existing_ids]
+
 
     def prepare_and_ingest(self, df: pd.DataFrame):
         insert_data = {

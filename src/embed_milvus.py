@@ -16,20 +16,19 @@ def main(shard_id: int, num_shards: int, batch_size: int):
     print("=" * 50)
 
     with tqdm(total=total_papers, unit="papers") as pbar:
-        for df in meta.get_pending_papers_batch(batch_size=batch_size, shard_id=shard_id, num_shards=num_shards):
-            # Filter out papers that are already embedded
-            pending_ids = milvus.filter_existing_ids(df['arxiv_id'].tolist())
-            
+        for batch_df in meta.get_pending_papers_batch(batch_size=batch_size, shard_id=shard_id, num_shards=num_shards):
+            # try skipping this? we don't want to load entire collection while inserting
+            '''
+            pending_ids = milvus.filter_existing_ids(batch_df['arxiv_id'].tolist())
             if not pending_ids:
-                pbar.update(len(df))
+                pbar.update(len(batch_df))
                 continue
-                
-            df_filtered = df[df['arxiv_id'].isin(pending_ids)].copy()
+            df_filtered = batch_df[batch_df['arxiv_id'].isin(pending_ids)].copy()
+            '''
             
-            embedding = embedder.generate_embeddings(df_filtered)
+            embedding = embedder.generate_embeddings(batch_df)
             milvus.prepare_and_ingest(embedding)
-            
-            pbar.update(len(df))
+            pbar.update(len(batch_df))
     
     
 if __name__ == '__main__':
