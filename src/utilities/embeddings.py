@@ -31,6 +31,9 @@ class EmbeddingGenerator:
         return self.dense_model.encode(texts, convert_to_tensor=True, normalize_embeddings=True)
 
     def generate_sparse_embedding(self, text):
+        if not isinstance(text, str) or not text.strip():
+            return {}
+            
         tokens = self.sparse_tokenizer(text, return_tensors='pt', padding=True, truncation=True, max_length=512).to(self.device)
         with torch.no_grad():
             output = self.sparse_model(**tokens)
@@ -47,11 +50,21 @@ class EmbeddingGenerator:
 
     def generate_embeddings(self, paper_df: pd.DataFrame) -> pd.DataFrame:
         df = paper_df.copy()
+        df['title'] = df['title'].fillna('').astype(str)
+        df['abstract'] = df['abstract'].fillna('').astype(str)
         
         sep_token = self.dense_model.tokenizer.sep_token
         df['specter_input'] = df['title'] + sep_token + df['abstract']
+        
+        logger.info(f"Generating dense embeddings for {len(df)} papers...")
         df['dense_vector'] = list(
             self.generate_dense_embeddings(df['specter_input'].tolist()).cpu().numpy()
         )
+        
+        if self.device == "cuda":
+            torch.cuda.empty_cache()
+
+        logger.info(f"Generating sparse embeddings for {len(df)} papers...")
         df['sparse_vector'] = df['specter_input'].apply(self.generate_sparse_embedding)
+        
         return df

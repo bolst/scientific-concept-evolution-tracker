@@ -10,6 +10,8 @@ def main(shard_id: int, num_shards: int, batch_size: int):
     embedder = EmbeddingGenerator()
     milvus = MilvusProvider()
     
+    print(f"EmbeddingGenerator device: {embedder.device}")
+    
     total_papers = meta.get_pending_paper_count(shard_id=shard_id, num_shards=num_shards)
     print(f"Processing {total_papers} papers (Shard {shard_id}/{num_shards})...")
     
