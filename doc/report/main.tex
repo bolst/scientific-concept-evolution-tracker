@@ -1,0 +1,107 @@
+
+\documentclass[sigconf]{acmart}
+
+%%
+%% \BibTeX command to typeset BibTeX logo in the docs
+\AtBeginDocument{%
+  \providecommand\BibTeX{{%
+\normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
+
+%% % Do not print ACM Reference Format
+\settopmatter{printacmref=false}
+
+%% % Location of your graphics files for figures, here a sub-folder to the main project folder
+\graphicspath{{./images/}}
+
+\begin{document}
+
+%%
+%% The "title" command has an optional parameter,
+%% allowing the author to define a "short title" to be used in page headers.
+\title{Scientific Concept Evolution Tracker}
+
+\acmConference[CSC2508: Advanced Data Systems]{CSC2508}{Fall 2025}{University of Toronto}
+
+%%
+\author{Nic Bolton}
+\affiliation{%
+  \institution{University of Toronto}
+  \streetaddress{27 King's College Circle}
+  \city{Toronto}
+\country{Canada}}
+\email{nic@cs.toronto.edu}
+
+%%
+%% By default, the full list of authors will be used in the page
+%% headers. Often, this list is too long, and will overlap
+%% other information printed in the page headers. This command allows
+%% the author to define a more concise list
+%% of authors' names for this purpose.
+\renewcommand{\shortauthors}{N. Bolton}
+
+%%
+%% The abstract is a short summary of the work to be presented in the
+%% article.
+\begin{abstract}
+  With the sheer volume of research being published, the history and context of how scientific ideas evolve are often difficult to visualize through the noise.
+  Terminology in science can be dynamic---the semantic meaning of terms such as ``neural networks'', ``entropy'', or ``plasma'' shift significantly over decades as new research subfields emerge.
+  Traditional information retrieval systems and static vector databases index semantic meanings as fixed points in high-dimensional space, which flattens the temporal dimension and hides the evolutionary history of these concepts.
+  This report introduces the Scientific Concept Evolution Tracker (SCET), a comprehensive system designed to ingest, index, and analyze large-scale scientific corpora to quantify this semantic drift.
+  SCET is built for scale with PostgreSQL for storing metadata and Milvus for embeddings.
+  We introduce a methodology that combines unsupervised clustering (K-Means) with temporal segmentation (Decision Tree Regression) to automatically identify distinct ``eras'' of a concept's life cycle.
+  We demonstrate the system's capabilities through case studies, such as the divergence of ``Transformer'' from electrical engineering to natural language processing, and provide a quantitative analysis of system performance on a dataset sourced from arXiv.
+\end{abstract}
+
+%%
+%% This command processes the author and affiliation and title
+%% information and builds the first part of the formatted document.
+\maketitle
+
+\section{Introduction}
+Papers do not have any fixed sections names. Three levels of heading are supported in ACM papers.
+
+A test reference of Bush's `As We May Think' \cite{bush:1945:awmt}, to indicate how references are set up.
+
+There is no need to save this file when editing as Overleaf auto-saves the document. Use the green `Recompile' button in the upper menu bar to show or refresh the PDF. The output PDF is not saved into the project but can be downloaded, for reading outside overleaf, using a button at the right-hand end of the Overleaf menu-bar. To download the project files, use the home button in the menu bar to exit the project. Download options are available in your project listing.
+
+Depending on your type of Overleaf account you will be able to share access with fellow authors---see Overleaf's documentation for details. Shared access also allows for leaving comments in the project.
+
+\subsection{Do Not Remove Boilerplate Code}
+The TEX document includes code to generate sections such as the the copyright block. Do not remove these. Authors of accepted papers will receive sections of code to replace these and customise the final paper accordingly.
+
+Pay attention to the code comments about author information and add/remove authors as necessary; there must be at least one author. It is desirable that all/most authors have an ORCID ID as this is replacing the need for explicit emails that my change as researcher move around. If an ORCID is supplied that author's name is made the anchor text of a web link to their ORCID page.
+
+Macro codes are offered (\texttt{e.g. authornote}) which may be used as well as indicating the corresponding author(s) for communication during publication.
+
+\subsection{General points on ACM papers}
+See the file `sample-sigconf.pdf' provided with this template set. It explains the basics of a number of structural features.
+
+Newer users of \LaTeX\ should take care to understand \LaTeX's special characters that need explicit escaping. Also be aware that typographic quotes and en-dash/em-dash hyphens are not used literally in TEX documents but are indicated with macros.
+
+Overleaf has extensive documentation covering how to indicate typographic elements in \LaTeX code.
+
+\subsubsection{A Third-level Heading}
+Note that level-three headings are inset into the beginning in the first paragraph of that section, regardless of line breaks in the source document.
+
+Sections at all three levels are auto-numbered, so these do not need to be numbered in your text.
+
+%%
+%% The acknowledgments section is defined using the "acks" environment
+%% (and NOT an unnumbered section). This ensures the proper
+%% identification of the section in the article metadata, and the
+%% consistent spelling of the heading.
+\begin{acks}
+  Acknowledgements go here. Delete enclosing begin/end markers if there are no acknowledgements.
+\end{acks}
+
+%%
+%% The next two lines define the bibliography style to be used, and
+%% the bibliography file.
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references.bib}
+
+%%
+\end{document}
+\endinput
+%%
+%% End of file `main.tex'.
