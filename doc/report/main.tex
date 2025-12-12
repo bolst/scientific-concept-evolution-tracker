@@ -124,7 +124,7 @@ The similarity measurement is often done using Cosine Similarity
 for TF-IDF weights of the query $\boldsymbol{q}$ and the document $\boldsymbol{d}$.
 
 This allows for ranked retrieval results based on the angle between vectors, rather than a binary inclusion/exclusion.
-However, traditional VSMs treat terms as orthogonal dimensions, meaning they cannot capture semantic relationships between synonyms (e.g., ``car'' and ``automobile'') without explicit expansion \cite{ir:manning}.
+However, traditional VSMs treat terms as orthogonal dimensions, meaning they cannot capture semantic relationships between synonyms (e.g., car and automobile) without explicit expansion \cite{ir:manning}.
 
 \subsubsection{BM25}
 Okapi Best Matching 25 (BM25) represents a significant evolution in probabilistic information retrieval.
@@ -132,6 +132,120 @@ While sharing similarities with TF-IDF, BM25 introduces two critical improvement
 Unlike TF-IDF, where the score increases linearly with term frequency, BM25 applies a saturation function so that the value of a term diminishes as it is repeated (thus, preventing long repetitions of keywords from dominating results).
 Additionally, it penalizes long documents (which naturally contain more terms) to prevent them from unfairly dominating search results.
 BM25 remains a strong baseline for lexical search tasks today.\cite{ir:bm25}.
+
+\subsection{Evolution of NLP Representations}
+
+The representation of text is fundamental to our ability to measure drift.
+
+\subsubsection{Static Embeddings}
+Word2Vec \cite{word2vec} and GloVe \cite{glove} introduced distributed representations. They rely on the distributional hypothesis: ``a word is characterized by the company it keeps''.
+These models map discrete tokens to dense vectors in a continuous space, capturing syntactic and semantic regularities.
+The vectors that are assigned to these tokens (words) are derived so that they are in close proximity to other similar words (for example, the vectors for ``dog'' and ``puppy'' are very close).
+However, these models are static, meaning they assign a fixed vector to each word type regardless of context.
+For example, a vector would be generated for the word ``bank'', but would be indifferent whether it was used in the context of river banks or piggy banks.
+This imposes a significant limitation for scientific text, where acronyms and terms often have distinct or field-specific definitions that cannot be derived via static representation.
+
+\subsubsection{Contextual Embeddings}
+ELMo \cite{elmo} and BERT \cite{bert} introduced dynamic embeddings to address the limitations of static models.
+The Transformer \cite{attention} architecture's self-attention mechanism allows the representation of a token to be a function of its surrounding context.
+BERT (Bidirectional Encoder Representations from Transformers) pre-trains on a masked language modeling objective, allowing it to learn deep bidirectional representations.
+Unlike static embeddings, BERT generates a representation for a token that is conditioned on the entire input sequence.
+This allows a word such as ``bank'' to become associated with the context it was used in---if it sees ``river'' nearby, then it can identify river bank as the likely association.
+This concept is useful for our problem, as it allows for distinguishing ``Attention'' (psychology) from ``Attention'' (machine learning) in a given corpus.
+
+\subsubsection{Domain-Specific Models}
+Although contextual embedding models such as BERT are great drivers for advancing the field of NLP, they often underperform on domain-specific corpora such as scientific text.
+This is because they are trained on corpora such as Wikipedia, which differs significantly in vocabulary and syntax from scientific literature.
+SciBERT \cite{scibert} addresses this by pre-training BERT on a large corpus of scientific papers.
+SPECTER \cite{specter2} took this further by leveraging a unique feature of research: citations.
+They used citation graphs as a signal for semantic similarity, which groups papers based on how related they are as opposed to just textual overlap.
+It uses a triplet loss objective:
+\begin{equation*}
+  \mathcal{L} = \max \left\{ d(q, p^+) - d(q, p^-) + m, 0 \right\}
+\end{equation*}
+where $d$ is a distance function, $q$ is a query paper, $p^+$ is a cited paper, $p^-$ is a non-cited paper (but may be cited by $p^+$), and $m$ is the loss margin hyperparameter.
+By training the model to pull cited papers closer in vector space and push unrelated papers apart, 2 learns embeddings that reflect the functional relationships between papers.
+
+\subsection{Vector Database Indexing}
+
+Searching a dataset of millions of high-dimensional vectors is computationally prohibitive using brute force ($O(N)$).
+SCET relies on Approximate Nearest Neighbor (ANN) algorithms.
+
+\subsubsection{Inverted File Index}
+The Inverted File Index (IVF) works by partitioning the vector space into Voronoi cells, where every document vector is then assigned to its nearest centroid.
+Now upon search, the system can extract a subset of the vectors by comparing the query vector to the centroids.
+A benefit to IVF is its low memory footprint \cite{ir:manning}.
+
+\subsubsection{Hierarchical Navigable Small World}
+While partition-based methods like IVF offer memory efficiency, graph-based approaches currently provide the superior trade-off between latency and recall.
+Hierarchical Navigable Small World (HNSW) structures data into a multi-layered graph hierarchy inspired by Skip Lists and the ``small world'' phenomenon \cite{small-world}.
+The upper layers consist of sparse, long-range links that allow the search algorithm to traverse the vector space rapidly, effectively zooming in on the target region.
+Once the coarse location is identified, the search descends to lower, denser layers for fine-grained greedy traversal to locate the nearest neighbors.
+Although HNSW requires higher memory overhead to store the graph connectivity compared to quantization methods, it is robust against the curse of dimensionality and does not require the training phases of clustering approaches \cite{hnsw}.
+
+\subsection{Semantic Drift Analysis}
+
+Semantic drift (or semantic change) is the study of change with respect to the meaning of words, specifically the evolution of how a word is used.
+For example, the word \textit{awful} originally meant to inspire wonder or fear, and hence impressive.
+Today, it is used to describe something that is regarded as very bad.
+
+\subsubsection{Alignment}
+Since embedding models are initialized randomly, the vector spaces for different time periods often end up rotated or flipped relative to each other. Orthogonal Procrustes Analysis is used to fix this, by mathematically rotating the vector space of one time period to align it with the next. By locking the two maps together, it ensures that if a word's position changes, it represents a genuine shift in meaning rather than a side effect of the model's random initialization \cite{procrustes} .
+
+\subsubsection{Dynamic Word Embeddings}
+While alignment-based methods rely on independent training of temporal slices, Dynamic Probabilistic Models treat the evolution of semantic meaning as a continuous latent variable process.
+First introduced by Balmer and Mandt \cite{dynamicwords}, their process involves training a single global model where the embedding of a term at time $t$ is conditioned on its embedding at time $t-1$, modeled as a Gaussian Random Walk. This process ensures that meanings shift gradually rather than abruptly.
+By using data from surrounding time periods, these models work much better for rare terms.
+This eliminates the random noise often seen in year-by-year training, resulting in a clearer, smoother path of how a concept has changed.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Methodology}
+
+\subsection{System Architecture and Data Pipeline}
+\subsubsection{Data Ingestion Layer}
+\subsubsection{Vector Storage Layer (Milvus)}
+
+\subsection{Hybrid Embedding Strategy}
+\subsubsection{Dense Embedding (Semantic)}
+\subsubsection{Sparse Embedding (Lexical)}
+\subsubsection{Hybrid Scoring}
+
+\subsection{Concept Clustering Algorithm}
+
+\subsection{Era Detection}
+
+\subsection{Identifying Pivotal Papers}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Experimental Results}
+
+\subsection{System Performance Benchmarks}
+\subsubsection{Ingestion Scalability}
+\subsubsection{Query Latency}
+
+\subsection{Case Studies}
+\subsubsection{Transformer}
+\subsubsection{Corona}
+
+\subsection{Ablation Study: Hybrid vs. Dense-Only}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Discussion}
+
+\subsection{The Time Machine Effect}
+
+\subsection{Scalability vs. Depth Trade-off}
+
+\subsection{Limitations}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Conclusion}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%
 %% The acknowledgments section is defined using the "acks" environment
