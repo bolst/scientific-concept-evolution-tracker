@@ -1,10 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=scet_embed
-#SBATCH --array=0-9                 # Run 10 parallel jobs
+#SBATCH --array=0-4                 # Run 5 parallel jobs
 #SBATCH --output=logs/embed_%a.log  # Log file per array task
 #SBATCH --cpus-per-task=4           # CPUs per task
 #SBATCH --mem=16G                   # Memory per task
 #SBATCH --time=72:00:00             # Max runtime
+#SBATCH --gres=gpu:1
+#SBATCH --partition=gpunodes
 
 mkdir -p logs
 
