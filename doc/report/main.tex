@@ -1,5 +1,5 @@
 
-\documentclass[sigconf]{acmart}
+\documentclass[sigconf,nonacm]{acmart}
 
 %%
 %% \BibTeX command to typeset BibTeX logo in the docs
@@ -58,32 +58,80 @@
 \maketitle
 
 \section{Introduction}
-Papers do not have any fixed sections names. Three levels of heading are supported in ACM papers.
 
-A test reference of Bush's `As We May Think' \cite{bush:1945:awmt}, to indicate how references are set up.
+Science is a cumulative endeavor, yet the language of science is fluid.
+A core challenge in bibliometrics and the ``Science of Science'' is understanding how scientific consensus and terminology evolve.
+For a researcher entering a new field, understanding the historical context of a term is as critical as understanding its current definition.
+For example, a query for ``Attention'' in 2005 would yield results dominated by cognitive psychology and neurobiology.
+The same query in the late 2010s and early 2020s is overwhelmingly dominated by field of machine learning.
+This is the phenomenon that we are interested in, that is, being able to quantify how a concept's relevance or association with specific fields change over time.
 
-There is no need to save this file when editing as Overleaf auto-saves the document. Use the green `Recompile' button in the upper menu bar to show or refresh the PDF. The output PDF is not saved into the project but can be downloaded, for reading outside overleaf, using a button at the right-hand end of the Overleaf menu-bar. To download the project files, use the home button in the menu bar to exit the project. Download options are available in your project listing.
+The introduction and combination of Large Language Models (LLMs) and vector databases have revolutionized semantic search.
+By representing text as dense vectors in a high-dimensional space, we can capture semantic similarity beyond simple keyword matching.
+However, most vector search implementations treat the document corpus as a static snapshot.
+They are designed to answer the question, ``What is semantically similar to this query now?'' rather than ``How has the meaning of this query changed over time?''.
 
-Depending on your type of Overleaf account you will be able to share access with fellow authors---see Overleaf's documentation for details. Shared access also allows for leaving comments in the project.
+This project addresses the following question.
+How can we design a scalable vector database system that can quantify the semantic evolution of scientific concepts and identify pivotal publications that drive these shifts?
 
-\subsection{Do Not Remove Boilerplate Code}
-The TEX document includes code to generate sections such as the the copyright block. Do not remove these. Authors of accepted papers will receive sections of code to replace these and customise the final paper accordingly.
+SCET was developed to answer this question.
+It consists of a pipeline that:
 
-Pay attention to the code comments about author information and add/remove authors as necessary; there must be at least one author. It is desirable that all/most authors have an ORCID ID as this is replacing the need for explicit emails that my change as researcher move around. If an ORCID is supplied that author's name is made the anchor text of a web link to their ORCID page.
+\begin{enumerate}
+  \item Ingests and indexes scientific abstracts using a hybrid embedding strategy
+  \item Retrieves context-aware results using a weighted hybrid search
+  \item Clusters results into sub-concepts associated with a given query
+  \item Produces a set of time periods that represent ``stable'' eras of a sub-concepts association/relevancy
+  \item Identifies papers that are ``pivotal'' to the shift into these eras
+\end{enumerate}
 
-Macro codes are offered (\texttt{e.g. authornote}) which may be used as well as indicating the corresponding author(s) for communication during publication.
+The remainder of this paper is organized as follows.
+We first review the background and related work in NLP and bibliometrics.
+We then discuss the details of the methodology and system architecture, followed by a presentation of the experimental results and case studies.
+We conclude by discussing limitations and future work.
 
-\subsection{General points on ACM papers}
-See the file `sample-sigconf.pdf' provided with this template set. It explains the basics of a number of structural features.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Newer users of \LaTeX\ should take care to understand \LaTeX's special characters that need explicit escaping. Also be aware that typographic quotes and en-dash/em-dash hyphens are not used literally in TEX documents but are indicated with macros.
+\section{Background and Related Work}
 
-Overleaf has extensive documentation covering how to indicate typographic elements in \LaTeX code.
+The problem to solve (tracking the evolution of scientific concepts) sits at the intersection of Natural Language Processing (NLP), Information Retrieval (IR), and the ``Science of Science''.
+This section reviews the historical progression of these fields and the specific technologies that enable SCET.
 
-\subsubsection{A Third-level Heading}
-Note that level-three headings are inset into the beginning in the first paragraph of that section, regardless of line breaks in the source document.
+\subsection{The Evolution of Information Retrieval}
 
-Sections at all three levels are auto-numbered, so these do not need to be numbered in your text.
+The field of Information Retrieval has evolved through several distinct paradigms.
+An overview of the history is listed below.
+It is important to note that although these systems perform well within their own goals, they all lack the ability to capture semantic and contextual meaning within terms.
+
+\subsubsection{Boolean Logic}
+The earliest IR systems relied on semantics used within set theory, where queries were built with operators such as AND, OR, NOT.
+These systems could make retrievals at a high level of precision by using Inverted Indices.
+These work as a key-value store, that is, each term is a key that is associated with a list of pages that contain the term.
+This results in a very fast and precise system \cite{ir:boolean}.
+
+\subsubsection{TF-IDF}
+Term Frequency Inverse Document Frequency (TF-IDF) introduced the concept of weighting the importance of words.
+This system involves calculating a score for a term, derived by balancing how frequently a term appears in a specific document (TF) against how rarely the term appears across the entire collection of documents (IDF).
+Consequently, these scores often favour the terms that best characterize the topics involved in a collection of documents. \cite{ir:manning}.
+
+\subsubsection{Vector Space Model}
+The Vector Space Model (VSM) generalized the idea of weighting terms by representing documents as vectors in a multi-dimensional space, where each dimension corresponds to a distinct term in the corpus.
+In this model, the relevance of a document to a query is measured by the similarity between their respective vectors.
+The similarity measurement is often done using Cosine Similarity
+\begin{equation}
+  \cos (\boldsymbol{q}, \boldsymbol{d}) = \frac{\boldsymbol{q} \cdot \boldsymbol{d}}{\Vert \boldsymbol{q} \Vert \Vert \boldsymbol{d} \Vert}
+\end{equation}
+for TF-IDF weights of the query $\boldsymbol{q}$ and the document $\boldsymbol{d}$.
+
+This allows for ranked retrieval results based on the angle between vectors, rather than a binary inclusion/exclusion.
+However, traditional VSMs treat terms as orthogonal dimensions, meaning they cannot capture semantic relationships between synonyms (e.g., ``car'' and ``automobile'') without explicit expansion \cite{ir:manning}.
+
+\subsubsection{BM25}
+Okapi Best Matching 25 (BM25) represents a significant evolution in probabilistic information retrieval.
+While sharing similarities with TF-IDF, BM25 introduces two critical improvements: term saturation and document length normalization.
+Unlike TF-IDF, where the score increases linearly with term frequency, BM25 applies a saturation function so that the value of a term diminishes as it is repeated (thus, preventing long repetitions of keywords from dominating results).
+Additionally, it penalizes long documents (which naturally contain more terms) to prevent them from unfairly dominating search results.
+BM25 remains a strong baseline for lexical search tasks today.\cite{ir:bm25}.
 
 %%
 %% The acknowledgments section is defined using the "acks" environment
