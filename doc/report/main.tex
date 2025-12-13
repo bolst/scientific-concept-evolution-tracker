@@ -124,7 +124,7 @@ The similarity measurement is often done using Cosine Similarity
 for TF-IDF weights of the query $\boldsymbol{q}$ and the document $\boldsymbol{d}$.
 
 This allows for ranked retrieval results based on the angle between vectors, rather than a binary inclusion/exclusion.
-However, traditional VSMs treat terms as orthogonal dimensions, meaning they cannot capture semantic relationships between synonyms (e.g., car and automobile) without explicit expansion \cite{ir:manning}.
+However, traditional VSMs treat terms as orthogonal dimensions, meaning they cannot capture semantic relationships between synonyms (for example, car and automobile) without explicit expansion \cite{ir:manning}.
 
 \subsubsection{BM25}
 Okapi Best Matching 25 (BM25) represents a significant evolution in probabilistic information retrieval.
@@ -190,11 +190,14 @@ For example, the word \textit{awful} originally meant to inspire wonder or fear,
 Today, it is used to describe something that is regarded as very bad.
 
 \subsubsection{Alignment}
-Since embedding models are initialized randomly, the vector spaces for different time periods often end up rotated or flipped relative to each other. Orthogonal Procrustes Analysis is used to fix this, by mathematically rotating the vector space of one time period to align it with the next. By locking the two maps together, it ensures that if a word's position changes, it represents a genuine shift in meaning rather than a side effect of the model's random initialization \cite{procrustes} .
+Since embedding models are initialized randomly, the vector spaces for different time periods often end up rotated or flipped relative to each other.
+Orthogonal Procrustes Analysis is used to fix this, by mathematically rotating the vector space of one time period to align it with the next.
+By locking the two maps together, it ensures that if a word's position changes, it represents a genuine shift in meaning rather than a side effect of the model's random initialization \cite{procrustes} .
 
 \subsubsection{Dynamic Word Embeddings}
-While alignment-based methods rely on independent training of temporal slices, Dynamic Probabilistic Models treat the evolution of semantic meaning as a continuous latent variable process.
-First introduced by Balmer and Mandt \cite{dynamicwords}, their process involves training a single global model where the embedding of a term at time $t$ is conditioned on its embedding at time $t-1$, modeled as a Gaussian Random Walk. This process ensures that meanings shift gradually rather than abruptly.
+While alignment-based methods rely on independent training of temporal slices, dynamic probabilistic models treat the evolution of semantic meaning as a continuous latent variable process.
+First introduced by Balmer and Mandt \cite{dynamicwords}, their process involves training a single global model where the embedding of a term at time $t$ is conditioned on its embedding at time $t-1$, modeled as a Gaussian Random Walk.
+This process ensures that meanings shift gradually rather than abruptly.
 By using data from surrounding time periods, these models work much better for rare terms.
 This eliminates the random noise often seen in year-by-year training, resulting in a clearer, smoother path of how a concept has changed.
 
@@ -203,19 +206,121 @@ This eliminates the random noise often seen in year-by-year training, resulting 
 \section{Methodology}
 
 \subsection{System Architecture and Data Pipeline}
-\subsubsection{Data Ingestion Layer}
+
+ArXiv has a public Google Cloud Storage Bucket that includes the metadata of approximately 4 million publications.
+For this project, we utilize a snapshotted version of this metadata, which is available on Kaggle \cite{kaggle:arxiv} and is provided as a 3.8GB JSON file.
+
+\subsubsection{Data Ingestion and Relational Storage}
+Due to the size of the dataset, loading the entire file into memory was infeasible.
+We resolved this by processing the file in batches.
+For each publication we extract its unique arXiv ID along with the title, abstract, primary category, publication date, and DOI.
+
+This structured metadata is stored in a PostgreSQL \cite{postgres} database.
+PostgreSQL serves as the source of truth for document metadata and enables efficient filtering based on structured fields (for example, retrieving all papers from 2015 in the \textit{cs.AI} category).
+The database schema is designed to handle the metadata efficiently, with the arXiv ID serving as the primary key that links the relational data in PostgreSQL to the embeddings in the vector database.
+This separation of concerns allows each system to be optimized for its specific access patterns.
+
 \subsubsection{Vector Storage Layer (Milvus)}
+We deploy Milvus Standalone v2.6.6 \cite{milvus} as our vector database.
+Milvus was selected for its cloud-native architecture, which separates storage from compute, allowing us to scale query nodes independently of data volume.
+To optimize for our specific access patterns (which heavily rely on filtering by time and scientific domain) we implement a custom partitioning strategy.
+We define a partition key derived from a hash of the publication year and primary category.
+This allows the query engine to prune irrelevant partitions during search, significantly reducing the search space for temporal queries.
+For example, a query for \textit{Machine Learning Papers in 2015} only needs to scan a small fraction of the total index, rather than the entire collection of 4 million vectors. The collection schema is detailed in Table \ref{tab:schema}.
+
+\begin{table*}
+  \caption{Milvus Collection Schema}
+  \label{tab:schema}
+  \begin{tabular}{ccl}
+    \toprule
+    Field Name & Data Type & Description \\
+    \midrule
+    \texttt{paper\_id} & Int64 & Primary Key (64-bit hash of arXiv ID) \\
+    \texttt{arxiv\_id} & VarChar(32) & ArXiv ID (for debugging) \\
+    \texttt{dense\_vector} & FloatVector (768) & Semantic embedding (SPECTER2) \\
+    \texttt{sparse\_vector} & SparseFloatVector & Lexical embedding (SPLADE) \\
+    \texttt{publication\_year} & Int16 & Scalar field for temporal filtering \\
+    \texttt{partition\_key} & Int64 & Hash of publication year and category \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+We utilize Hierarchical Navigable Small World (HNSW) indexes for dense vectors.
+We configure the index with $M=16$ (the number of bi-directional links per node) and $efConstruction=200$ (the size of the dynamic candidate list during build).
+This configuration was selected to maximize recall while maintaining interactive query latency at the cost of higher memory consumption, compared to quantization-based indexes like Inverted File with Product Quantization \cite{ivfpq}.
+For the sparse vectors, we use a Sparse Inverted Index, which is analogous to the inverted indices used in traditional search engines but optimized for floating-point weights.
+
+\subsubsection{Deployment and Infrastructure}
+The entire SCET system is containerized using Docker \cite{docker} to ensure reproducibility and ease of deployment.
+We utilize Docker Compose to orchestrate the necessary services, including Milvus Standalone as the core vector database engine, etcd \cite{etcd} for metadata management and service discovery, MinIO \cite{minio} as an S3-compatible object storage service for persisting vector data, and PostgreSQL for storing structured paper metadata.
+
+The system is deployed on a Linux-based home lab server.
+The hardware consists of an Intel Xeon E5-1620 v3 CPU (8 cores @ 3.50 GHz), 16 GB of RAM, and a Seagate BarraCuda 20TB HDD.
+Resource limits are enforced via Docker Compose, with Milvus allocated 8GB of RAM, etcd 4GB, and MinIO 2GB.
 
 \subsection{Hybrid Embedding Strategy}
+SCET employs a \textit{Retrieve-then-Rerank} strategy using a hybrid score to balance semantic understanding with lexical precision.
+Pure lexical search often suffers from the \textit{vocabulary mismatch problem} (or lexical gap), where it fails to retrieve relevant documents that use synonyms (for example, missing a paper on ``automobiles'' when querying for ``cars'') \cite{lexicalgap}.
+Conversely, pure dense retrieval can lack \textit{lexical precision}, retrieving semantically related documents that miss specific query terms (for example, retrieving a paper about recurrent neural networks when the user specifically asked for LSTMs).
+We use a hybrid approach so that both of these issues can be addressed.
+
 \subsubsection{Dense Embedding (Semantic)}
+We utilize SPECTER2 \cite{specter2base}, which succeeds the discussed SPECTER model that is pre-trained on scientific citations.
+The input to the model is a concatenation of the paper's title and abstract, separated by SPECTER2's provided separator token: \texttt{Title[SEP]Abstract}.
+This generates a 768-dimensional dense vector that captures the high-level semantic intent of the paper.
+This explicitly encodes a ``scientific relatedness'' into the vector space: papers are encoded as queries/candidates that are intended for use in link predictions or nearest neighbor searches.
+
 \subsubsection{Sparse Embedding (Lexical)}
+To prevent the loss of specific keyword information, we also generate sparse embeddings using SPLADE (Sparse Lexical and Expansion Model) \cite{splade}.
+SPLADE works by taking sentences or paragraphs as input and mapping them to a 30522-dimensional vector space.
+Unlike traditional bag-of-words models (such as TF-IDF) which only assigns weights to terms present in the document, SPLADE performs \textit{term expansion}.
+It uses the BERT Masked Language Model to predict relevant terms that do not appear in the text but are semantically related, assigning them non-zero weights.
+Mathematically, the weight $w_{ij}$ for token $j$ in document $i$ is calculated by aggregating the log-saturated attention weights across all input tokens.
+This functions as a ``learned'' inverted index, providing the precision of keyword matching with the recall of semantic expansion.
+This effectively allows us to get the benefits of both BM25 and dense retrieval \cite{splade:original}.
+
 \subsubsection{Hybrid Scoring}
+Retrieval is performed by executing two parallel searches: an ANN search on the dense index along with a term-matching search on the sparse index.
+A common challenge in hybrid search is the \textit{rank fusion problem}, that is, if we only retrieve the top $k$ results from each index, a document that is relevant in both but not top-ranked in either might be discarded.
+To address this, we fetch a candidate pool significantly larger than the final limit (for example, $10*k$) from both indices.
+We then normalize the scores (since Cosine Similarity scores are bound to the interval $[-1, 1]$, and Inner Product is unbounded) and combine them using a weighted sum:
+\begin{equation}
+  S_{hybrid} = \alpha \cdot S_{dense} + (1 - \alpha) \cdot S_{sparse}
+\end{equation}
+where $\alpha$ is a hyperparameter controlling the trade-off between semantic and lexical relevance.
+We default to $\alpha=0.5$, giving equal weight to conceptual similarity and keyword precision.
 
 \subsection{Concept Clustering Algorithm}
+To identify the distinct meanings (sub-concepts) associated with a query term, we perform clustering on the retrieved dense vectors.
+The underlying assumption is the Distributional Hypothesis applied to vector space.
+Papers discussing the same sub-concept (for example, ``Corona'' as a virus) will form a dense cluster that is spatially separated from papers discussing a different sub-concept (for example, ``Corona'' as a solar feature).
+
+Given a set of search results for a query $Q$, we extract their dense vectors $V_Q$.
+We then apply $k$-Means clustering to partition $V_Q$ into $k$ clusters.
+The optimal number of clusters $k$ is determined dynamically for each query by maximizing the Silhouette Score \footnote{The Silhouette Score measures how similar an object is to its own cluster (cohesion) compared to other clusters (separation), which is a metric we can use for cluster quality without the need for the actual labels.} over a range such as $[2,8]$.
+
+To interpret these clusters, we leverage the sparse vectors.
+Since SPLADE vectors represent the ``lexical essence'' of a document, we can generate a descriptive label for a cluster by summing the sparse vectors of all papers within it.
+The tokens with the highest summed weights represent the most discriminative keywords for that group.
+For example, one cluster for ``Transformer'' might yield top tokens ``voltage, power, current'', while another yields ``language, sequence, attention''.
+This serves as a convenient source for user interpretability.
 
 \subsection{Era Detection}
+Once sub-concepts are identified, we aim to detect their temporal ``eras'', that is, periods of stable activity or relevance.
+We treat the yearly publication count of a sub-concept as a time series signal.
+A naive approach might look for peaks or valleys, but publication data is noisy.
+Instead, we employ a Decision Tree Regressor to approximate this signal with a step function.
+By fitting a decision tree to the annual publication count with a limited depth, the algorithm naturally finds the optimal split points that minimize the variance within each leaf.
+These split points (thresholds) correspond to the temporal boundaries where the trend significantly changes.
+The leaf nodes of the tree represent the stable eras (for example, 2000--2012: low activity, 2013--2023: high activity).
+This method is non-parametric and robust to outliers, making it well-suited for bibliometric data.
 
 \subsection{Identifying Pivotal Papers}
+For each identified era, we seek to find the papers that best represent that specific semantic context during that time.
+Simply selecting the most cited papers would bias the results towards older, established work.
+Instead, we query the system for the top $N$ papers within the specific time window of the era, ranked by their hybrid score relative to the original query.
+These papers serve as the ``anchors'' for understanding how the concept was defined and used during that period.
+By surfacing these pivotal papers, SCET provides a curated list of papers that guides the user through the history of the concept, highlighting the seminal works that defined each era.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
