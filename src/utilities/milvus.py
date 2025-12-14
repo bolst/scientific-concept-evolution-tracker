@@ -58,7 +58,7 @@ class MilvusProvider:
         Builds indices for the collection. 
         This should be called AFTER bulk ingestion to avoid memory overhead and slowdowns.
         """
-        logger.info(('=' * 20) + f"Building indices for collection '{self.collection.name}'\n" + ('=' * 20))
+        logger.info('\n' + ('=' * 50) + f"\nBuilding indices for collection '{self.collection.name}'\n" + ('=' * 50))
         logger.info("Building Dense Vector Index (HNSW)...")
         self.collection.create_index(field_name="dense_vector", index_params={
             "metric_type": "COSINE",
