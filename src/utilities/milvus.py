@@ -69,7 +69,7 @@ class MilvusProvider:
         logger.info("Building Sparse Vector Index...")
         self.collection.create_index(field_name="sparse_vector", index_params={
             "metric_type": "IP", # Inner Product is standard for sparse
-            "index_type": "SPARSE_INVERTED_INDEX",
+            "index_type": "SPARSE_WAND",
             "params": {"drop_ratio_build": 0.2}
         })
         
