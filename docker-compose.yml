@@ -20,8 +20,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4'
-          memory: 4096M
+          cpus: '1'
+          memory: 2gb
 
   minio:
     container_name: milvus-minio
@@ -43,8 +43,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2'
-          memory: 2048M
+          cpus: '1'
+          memory: 8gb
 
   standalone:
     container_name: milvus-standalone
@@ -67,7 +67,7 @@ services:
       resources:
         limits:
           cpus: '4'
-          memory: 8192M
+          memory: 16gb
 
   postgres:
     image: postgres:15
