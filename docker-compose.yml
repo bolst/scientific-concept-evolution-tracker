@@ -42,7 +42,7 @@ services:
       resources:
         limits:
           cpus: '1'
-          memory: 8gb
+          memory: 4gb
 
   standalone:
     container_name: milvus-standalone
@@ -64,8 +64,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4'
-          memory: 16gb
+          cpus: '6'
+          memory: 20gb
 
   postgres:
     image: postgres:15
