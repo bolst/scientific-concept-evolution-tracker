@@ -32,7 +32,7 @@ class HybridSearch:
         
         # create search requests
         # Fetch more candidates for individual searches
-        candidate_limit = max(limit * 10, 100) 
+        candidate_limit = min(limit * 10, 16384) # 16384 is milvus limit
         expr = f"publication_year >= {start_year} && publication_year <= {end_year}"
         dense_req = AnnSearchRequest(
             data=[dense_vec],
