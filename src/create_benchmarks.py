@@ -140,7 +140,7 @@ def benchmark_clustering():
 
     # create plot
     logger.info("Generating Cluster Scalability Plot...")
-    plt.figure(figsize=(10, 6))
+    plt.figure()
     plt.plot(df_results['n_papers'], df_results['time_sec'], marker='o', linestyle='-', color='b')
     plt.title('Clustering Scalability')
     plt.xlabel('Number of Papers')
@@ -223,7 +223,7 @@ def benchmark_ablation():
     queries = df_summary['query']
     x = np.arange(len(queries))
     width = 0.25
-    plt.figure(figsize=(12, 6))
+    plt.figure()
     plt.bar(x - width, df_summary['jaccard_dense_hybrid'], width, label="$\\text{Dense} \\cap \\text{Hybrid}$")
     plt.bar(x, df_summary['jaccard_sparse_hybrid'], width, label="$\\text{Sparse} \\cap \\text{Hybrid}$")
     plt.bar(x + width, df_summary['jaccard_dense_sparse'], width, label="$\\text{Dense} \\cap \\text{Sparse}$")
@@ -231,7 +231,7 @@ def benchmark_ablation():
     plt.xlabel('Query')
     plt.ylabel('Jaccard Similarity')
     plt.title('Overlap between Retrieval Methods (Top-50)')
-    plt.xticks(x, queries)
+    plt.xticks(x, queries, rotation=45)
     plt.legend()
     plt.tight_layout()
     os.makedirs(image_dir, exist_ok=True)
