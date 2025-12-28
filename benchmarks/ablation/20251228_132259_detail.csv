@@ -1,0 +1,259 @@
+query,method,rank,arxiv_id,title,year,score
+Transformer,Dense,1,cs/9902017,Not Available,,0.9202742576599121
+Transformer,Dense,2,0711.2544,Perturbation Theory,,0.9110614061355591
+Transformer,Dense,3,0811.3402,Toolbox,,0.9110013842582703
+Transformer,Dense,4,math/0302312,This is withdrown,,0.9105131030082703
+Transformer,Dense,5,physics/0511142,Withdrawal,,0.9104273915290833
+Transformer,Dense,6,0812.3699,Multi-color Randomly Reinforced Urn for Adaptive Designs,,0.9100829362869263
+Transformer,Dense,7,hep-ph/0412415,Conference Summary,,0.9093197584152222
+Transformer,Dense,8,1308.6637,DIS and Beyond,,0.9089759588241577
+Transformer,Dense,9,0909.5036,Bibliography: Publications of J. L. Doob,,0.9069088697433472
+Transformer,Dense,10,0711.1698,On dual quadri-algebras,,0.9068387746810913
+Transformer,Sparse,1,2304.10557,An Introduction to Transformers,,0.9841074347496033
+Transformer,Sparse,2,2408.04619,Transformer Explainer: Interactive Learning of Text-Generative Models,,0.9832624197006226
+Transformer,Sparse,3,2107.00653,"Transformer-F: A Transformer network with effective methods for learning
+  universal sentence representation",,0.9829786419868469
+Transformer,Sparse,4,2306.07303,"A Comprehensive Survey on Applications of Transformers for Deep Learning
+  Tasks",,0.9829225540161133
+Transformer,Sparse,5,2103.00112,Transformer in Transformer,,0.9829042553901672
+Transformer,Sparse,6,2507.13354,Physical models realizing the transformer architecture of large language models,,0.9823910593986511
+Transformer,Sparse,7,2002.00212,"Pop Music Transformer: Beat-based Modeling and Generation of Expressive
+  Pop Piano Compositions",,0.9823905229568481
+Transformer,Sparse,8,2307.00067,Transformers in Healthcare: A Survey,,0.9823505878448486
+Transformer,Sparse,9,2405.12779,Transformer in Touch: A Survey,,0.9821369647979736
+Transformer,Sparse,10,2406.04305,Quixer: A Quantum Transformer Model,,0.9820790886878967
+Transformer,Hybrid,1,2504.14514,On Dimension-Free Transformer: An Application of STP to AI,,0.9379955530166626
+Transformer,Hybrid,2,1902.08307,"An\'alise t\'ermica\-fluidodin\^amica de um transformador de energia a
+  seco atrav\'es da din\^amica dos fluidos computacional",,0.9357273578643799
+Transformer,Hybrid,3,2304.10557,An Introduction to Transformers,,0.49205371737480164
+Transformer,Hybrid,4,2408.04619,Transformer Explainer: Interactive Learning of Text-Generative Models,,0.4916312098503113
+Transformer,Hybrid,5,2107.00653,"Transformer-F: A Transformer network with effective methods for learning
+  universal sentence representation",,0.49148932099342346
+Transformer,Hybrid,6,2306.07303,"A Comprehensive Survey on Applications of Transformers for Deep Learning
+  Tasks",,0.49146127700805664
+Transformer,Hybrid,7,2103.00112,Transformer in Transformer,,0.4914521276950836
+Transformer,Hybrid,8,2507.13354,Physical models realizing the transformer architecture of large language models,,0.49119552969932556
+Transformer,Hybrid,9,2002.00212,"Pop Music Transformer: Beat-based Modeling and Generation of Expressive
+  Pop Piano Compositions",,0.4911952614784241
+Transformer,Hybrid,10,2307.00067,Transformers in Healthcare: A Survey,,0.4911752939224243
+Corona,Dense,1,astro-ph/0511670,Island Universes,,0.9397759437561035
+Corona,Dense,2,cs/9902017,Not Available,,0.9362305998802185
+Corona,Dense,3,hep-ph/0412415,Conference Summary,,0.9327917098999023
+Corona,Dense,4,physics/0511142,Withdrawal,,0.9325040578842163
+Corona,Dense,5,1003.1896,Love kills Penna ageing model,,0.9279507398605347
+Corona,Dense,6,math/0302312,This is withdrown,,0.9268413782119751
+Corona,Dense,7,2307.14810,A Differential Datalog Interpreter,,0.9264177083969116
+Corona,Dense,8,1308.6637,DIS and Beyond,,0.9250779747962952
+Corona,Dense,9,hep-ph/9611274,Flaton Inflation Model,,0.9230219125747681
+Corona,Dense,10,0909.5036,Bibliography: Publications of J. L. Doob,,0.9226959943771362
+Corona,Sparse,1,math/0510248,The corona factorization property,,0.9808567762374878
+Corona,Sparse,2,1711.06836,Coronas for properly combable spaces,,0.9801759719848633
+Corona,Sparse,3,2102.09813,CoronaZ: another distributed systems project,,0.9795710444450378
+Corona,Sparse,4,1508.03800,Corona graphs as a model of small-world networks,,0.9787632822990417
+Corona,Sparse,5,1811.00461,The Properties of the Solar Corona and Its Connection to the Solar Wind,,0.9787229299545288
+Corona,Sparse,6,2305.18979,A new proof of the corona problem,,0.9787111878395081
+Corona,Sparse,7,1603.08779,Coronas and domination subdivision number of a graph,,0.9786762595176697
+Corona,Sparse,8,2311.15915,"A corona theorem for an algebra of Radon measures with an application to
+  exact controllability for linear controlled delayed difference equations",,0.9786486625671387
+Corona,Sparse,9,2307.06294,Corona: System Implications of Emerging Nanophotonic Technology,,0.9785269498825073
+Corona,Sparse,10,math/0702801,"Corona Theorem for $H^{\infty}$ on Coverings of Riemann Surfaces of
+  Finite Type",,0.9782876968383789
+Corona,Hybrid,1,2111.11006,"Further Results on Topological Indices of Two Corona Variants of Graph
+  Products",,0.9382627010345459
+Corona,Hybrid,2,math/0510248,The corona factorization property,,0.4904283881187439
+Corona,Hybrid,3,1711.06836,Coronas for properly combable spaces,,0.49008798599243164
+Corona,Hybrid,4,2102.09813,CoronaZ: another distributed systems project,,0.4897855222225189
+Corona,Hybrid,5,1508.03800,Corona graphs as a model of small-world networks,,0.4893816411495209
+Corona,Hybrid,6,1811.00461,The Properties of the Solar Corona and Its Connection to the Solar Wind,,0.4893614649772644
+Corona,Hybrid,7,2305.18979,A new proof of the corona problem,,0.48935559391975403
+Corona,Hybrid,8,1603.08779,Coronas and domination subdivision number of a graph,,0.48933812975883484
+Corona,Hybrid,9,2311.15915,"A corona theorem for an algebra of Radon measures with an application to
+  exact controllability for linear controlled delayed difference equations",,0.48932433128356934
+Corona,Hybrid,10,2307.06294,Corona: System Implications of Emerging Nanophotonic Technology,,0.48926347494125366
+Entropy,Dense,1,1109.3448,An Entropic Story,,0.9327666759490967
+Entropy,Dense,2,astro-ph/0511670,Island Universes,,0.9287291169166565
+Entropy,Dense,3,0711.2544,Perturbation Theory,,0.924945056438446
+Entropy,Dense,4,hep-ph/9611274,Flaton Inflation Model,,0.9234617948532104
+Entropy,Dense,5,cs/9902017,Not Available,,0.9232630133628845
+Entropy,Dense,6,1409.7113,Universal entropy invariants,,0.9231764078140259
+Entropy,Dense,7,1402.2696,Information Based Complexity of Networks,,0.9227708578109741
+Entropy,Dense,8,1109.0589,"Uncertainty principle for single particle lattice gas cellular automata
+  models",,0.9221474528312683
+Entropy,Dense,9,hep-ph/0412415,Conference Summary,,0.9207628965377808
+Entropy,Dense,10,cond-mat/0004158,Generalized Entropy Composition with Different q Indices: A Trial,,0.9200011491775513
+Entropy,Sparse,1,physics/0301048,Entropy is a Mathematical Formula,,0.9831196069717407
+Entropy,Sparse,2,quant-ph/0512251,"Entropy: An inherent, nonstatistical property of any system in any state",,0.9828802943229675
+Entropy,Sparse,3,2409.09232,What is Entropy?,,0.9828156232833862
+Entropy,Sparse,4,math-ph/0408040,Entropy is complexity,,0.9827814102172852
+Entropy,Sparse,5,2103.14980,A Notion of Entropy for Causal Fermion Systems,,0.9827604293823242
+Entropy,Sparse,6,1705.06001,An entropy for groups of intermediate growth,,0.9826958179473877
+Entropy,Sparse,7,1405.6133,"A review over the applicability of image entropy in analyses of remote
+  sensing datasets",,0.9826874732971191
+Entropy,Sparse,8,1807.00813,"Entropy as a bound for expectation values and variances of a general
+  quantum mechanical observable",,0.9826517701148987
+Entropy,Sparse,9,2403.15199,"Entropy and the City: Origins, trajectories and explorations of the
+  concept in urban science",,0.9825988411903381
+Entropy,Sparse,10,2204.05747,What entropy really is : the contribution of information theory,,0.9824504852294922
+Entropy,Hybrid,1,1310.5957,Entropy region and convolution,,0.9471746683120728
+Entropy,Hybrid,2,2503.15660,Entropy measures and their applications: A comprehensive review,,0.9456429481506348
+Entropy,Hybrid,3,1404.1998,A Light Discussion and Derivation of Entropy,,0.945298433303833
+Entropy,Hybrid,4,math/0103168,Free Entropy,,0.9450215697288513
+Entropy,Hybrid,5,1405.6133,"A review over the applicability of image entropy in analyses of remote
+  sensing datasets",,0.9450088739395142
+Entropy,Hybrid,6,2503.20543,Entropy in Science of Science,,0.9448167085647583
+Entropy,Hybrid,7,0812.1433,Entropy in the Present and Early Universe,,0.9446930885314941
+Entropy,Hybrid,8,1411.6733,"Novel Inequalities for Generalized Graph Entropies Revisited, Graph
+  Energies and Topological Indices",,0.9441134929656982
+Entropy,Hybrid,9,1801.07220,Entropy Based Risk Measures,,0.943773627281189
+Entropy,Hybrid,10,cond-mat/0612076,Probability distribution and entropy as a measure of uncertainty,,0.9437620043754578
+Token,Dense,1,cs/9902017,Not Available,,0.928621232509613
+Token,Dense,2,2307.14810,A Differential Datalog Interpreter,,0.9285182356834412
+Token,Dense,3,hep-ph/0412415,Conference Summary,,0.9258495569229126
+Token,Dense,4,math/0302312,This is withdrown,,0.9220296144485474
+Token,Dense,5,1308.6637,DIS and Beyond,,0.921711802482605
+Token,Dense,6,physics/0511142,Withdrawal,,0.9213629961013794
+Token,Dense,7,astro-ph/0511670,Island Universes,,0.9161436557769775
+Token,Dense,8,0712.0392,Collaborative Gain in Resource Sharing Communication Networks,,0.9148580431938171
+Token,Dense,9,2210.08982,Title Redacted,,0.9145686626434326
+Token,Dense,10,2410.17094,"Team Ryu's Submission to SIGMORPHON 2024 Shared Task on Subword
+  Tokenization",,0.9142932891845703
+Token,Sparse,1,2008.02538,Efficiency in Digital Economies -- A Primer on Tokenomics,,0.9800794124603271
+Token,Sparse,2,math/0201012,"Tokens: An Algebraic Construction Common in Combinatorics, Analysis, and
+  Physics",,0.9789968729019165
+Token,Sparse,3,2206.07841,"TOKEN is a MASK: Few-shot Named Entity Recognition with Pre-trained
+  Language Models",,0.978238582611084
+Token,Sparse,4,1808.01261,"Token Economics in Energy Systems: Concept, Functionality and
+  Applications",,0.9775232076644897
+Token,Sparse,5,2404.11624,Token Space: A Category Theory Framework for AI Computations,,0.9774883389472961
+Token,Sparse,6,1303.0407,"IRS for Computer Character Sequences Filtration: a new software tool and
+  algorithm to support the IRS at tokenization process",,0.9773387908935547
+Token,Sparse,7,2505.14178,Tokenization Constraints in LLMs: A Study of Symbolic and Arithmetic Reasoning Limits,,0.9769458770751953
+Token,Sparse,8,2503.20278,The cell as a token: high-dimensional geometry in language models and cell embeddings,,0.9768455028533936
+Token,Sparse,9,2510.09859,Token Is All You Price,,0.9768040180206299
+Token,Sparse,10,2412.10924,"Tokens, the oft-overlooked appetizer: Large language models, the distributional hypothesis, and meaning",,0.9767693281173706
+Token,Hybrid,1,1303.0407,"IRS for Computer Character Sequences Filtration: a new software tool and
+  algorithm to support the IRS at tokenization process",,0.9383870363235474
+Token,Hybrid,2,2508.14292,Tokens with Meaning: A Hybrid Tokenization Approach for NLP,,0.9380307197570801
+Token,Hybrid,3,2505.14178,Tokenization Constraints in LLMs: A Study of Symbolic and Arithmetic Reasoning Limits,,0.9379360675811768
+Token,Hybrid,4,2008.11084,Historical Context and Key Features of Digital Money Tokens,,0.9377444386482239
+Token,Hybrid,5,2505.08058,Hypernym Mercury: Token Optimization Through Semantic Field Constriction And Reconstruction From Hypernyms. A New Text Compression Method,,0.9367328882217407
+Token,Hybrid,6,2411.01693,Token Composition: A Graph Based on EVM Logs,,0.9365599155426025
+Token,Hybrid,7,2306.07764,Tokenization with Factorized Subword Encoding,,0.9360113143920898
+Token,Hybrid,8,2305.08787,"Comparing Variation in Tokenizer Outputs Using a Series of Problematic
+  and Challenging Biomedical Sentences",,0.9359266757965088
+Token,Hybrid,9,2202.10879,Evaluating Persian Tokenizers,,0.935667872428894
+Token,Hybrid,10,2403.00417,"Rethinking Tokenization: Crafting Better Tokenizers for Large Language
+  Models",,0.9351712465286255
+Attention,Dense,1,1811.07502,Fast Efficient Object Detection Using Selective Attention,,0.9309409856796265
+Attention,Dense,2,cs/9902017,Not Available,,0.9157419204711914
+Attention,Dense,3,astro-ph/0511670,Island Universes,,0.9155470728874207
+Attention,Dense,4,hep-ph/0412415,Conference Summary,,0.9153974652290344
+Attention,Dense,5,2208.10247,Generalized Attention Mechanism and Relative Position for Transformer,,0.9134945869445801
+Attention,Dense,6,physics/0511142,Withdrawal,,0.9134044647216797
+Attention,Dense,7,1904.02874,An Attentive Survey of Attention Models,,0.9116816520690918
+Attention,Dense,8,2502.10955,"A recurrent vision transformer shows signatures of primate visual
+  attention",,0.910298228263855
+Attention,Dense,9,2503.01753,Boolean-aware Attention for Dense Retrieval,,0.90995192527771
+Attention,Dense,10,1003.1896,Love kills Penna ageing model,,0.9098394513130188
+Attention,Sparse,1,2012.02659,Understanding Attention: In Minds and Machines,,0.9813574552536011
+Attention,Sparse,2,1902.02181,Attention in Natural Language Processing,,0.9813166260719299
+Attention,Sparse,3,1905.09856,Copy this Sentence,,0.980830729007721
+Attention,Sparse,4,2102.05628,On the Regularity of Attention,,0.9803280830383301
+Attention,Sparse,5,1905.10650,Are Sixteen Heads Really Better than One?,,0.9802026152610779
+Attention,Sparse,6,2505.14539,A Logic of General Attention Using Edge-Conditioned Event Models (Extended Version),,0.9799955487251282
+Attention,Sparse,7,2103.16775,"Attention, please! A survey of Neural Attention Models in Deep Learning",,0.9799658060073853
+Attention,Sparse,8,2007.02876,A Mathematical Theory of Attention,,0.9799008369445801
+Attention,Sparse,9,2502.15349,"AttentionEngine: A Versatile Framework for Efficient Attention
+  Mechanisms on Diverse Hardware Platforms",,0.979754626750946
+Attention,Sparse,10,2304.04556,Attention: Marginal Probability is All You Need?,,0.9796518087387085
+Attention,Hybrid,1,2012.02659,Understanding Attention: In Minds and Machines,,0.9453878402709961
+Attention,Hybrid,2,1904.02874,An Attentive Survey of Attention Models,,0.9447673559188843
+Attention,Hybrid,3,2407.01548,"From Cognition to Computation: A Comparative Review of Human Attention
+  and Transformer Architectures",,0.9440444111824036
+Attention,Hybrid,4,2102.07259,"Thank you for Attention: A survey on Attention-based Artificial Neural
+  Networks for Automatic Speech Recognition",,0.9436505436897278
+Attention,Hybrid,5,2103.16775,"Attention, please! A survey of Neural Attention Models in Deep Learning",,0.9426864981651306
+Attention,Hybrid,6,2111.07624,Attention Mechanisms in Computer Vision: A Survey,,0.9416442513465881
+Attention,Hybrid,7,2112.05909,Neural Attention Models in Deep Learning: Survey and Taxonomy,,0.9415332674980164
+Attention,Hybrid,8,1307.6170,6th International Symposium on Attention in Cognitive Systems 2013,,0.9412109851837158
+Attention,Hybrid,9,2203.14263,A General Survey on Attention Mechanisms in Deep Learning,,0.9411970376968384
+Attention,Hybrid,10,2007.14902,"Linear Attention Mechanism: An Efficient Attention for Semantic
+  Segmentation",,0.9404325485229492
+Neural Networks,Dense,1,1701.05549,Deep Neural Networks - A Brief History,,0.959136962890625
+Neural Networks,Dense,2,2304.05133,Lecture Notes: Neural Network Architectures,,0.9523506164550781
+Neural Networks,Dense,3,2011.05588,"Deep Neural Networks and Neuro-Fuzzy Networks for Intellectual Analysis
+  of Economic Systems",,0.9442046284675598
+Neural Networks,Dense,4,2106.13082,On the relationship between predictive coding and backpropagation,,0.9406229853630066
+Neural Networks,Dense,5,1805.07734,"Analysis of Multilayer Perceptron with Rectifier Linear Unit Activation
+  Function",,0.9381389021873474
+Neural Networks,Dense,6,1911.05640,"Neural Network Processing Neural Networks: An efficient way to learn
+  higher order functions",,0.9380887746810913
+Neural Networks,Dense,7,2410.05680,Convolutional neural networks applied to modification of images,,0.9379638433456421
+Neural Networks,Dense,8,2101.08635,"Neural Networks, Artificial Intelligence and the Computational Brain",,0.9378383755683899
+Neural Networks,Dense,9,2510.06762,Function regression using the forward forward training and inferring paradigm,,0.9374482035636902
+Neural Networks,Dense,10,1408.5549,"On the Neuron Response Features of Convolutional Neural Networks for
+  Remote Sensing Image",,0.9374157786369324
+Neural Networks,Sparse,1,2305.06160,Neuroscience needs Network Science,,0.9850010871887207
+Neural Networks,Sparse,2,0802.3582,Neural Networks and Database Systems,,0.984878659248352
+Neural Networks,Sparse,3,2101.08635,"Neural Networks, Artificial Intelligence and the Computational Brain",,0.9848237037658691
+Neural Networks,Sparse,4,2501.03235,Neural networks consisting of DNA,,0.9846956729888916
+Neural Networks,Sparse,5,2510.17849,Neural networks for neurocomputing circuits: a computational study of tolerance to noise and activation function non-uniformity when machine learning materials properties,,0.9845141172409058
+Neural Networks,Sparse,6,1907.06374,What does it mean to understand a neural network?,,0.9844571352005005
+Neural Networks,Sparse,7,cond-mat/9705270,Neural Networks,,0.9844282865524292
+Neural Networks,Sparse,8,1210.6511,Neural Networks for Complex Data,,0.9843347072601318
+Neural Networks,Sparse,9,1807.11935,Network models in neuroscience,,0.9842503070831299
+Neural Networks,Sparse,10,2002.11319,A neural network model of perception and reasoning,,0.9842402935028076
+Neural Networks,Hybrid,1,1701.05549,Deep Neural Networks - A Brief History,,0.9708649516105652
+Neural Networks,Hybrid,2,2101.08635,"Neural Networks, Artificial Intelligence and the Computational Brain",,0.9613310098648071
+Neural Networks,Hybrid,3,1911.05640,"Neural Network Processing Neural Networks: An efficient way to learn
+  higher order functions",,0.9607343673706055
+Neural Networks,Hybrid,4,1902.04704,Neural network models and deep learning - a primer for biologists,,0.9595837593078613
+Neural Networks,Hybrid,5,cs/0505019,Artificial Neural Networks and their Applications,,0.9592437744140625
+Neural Networks,Hybrid,6,2207.00767,"Perspectives and constraints on neural network models of neurobiological
+  processes",,0.9579925537109375
+Neural Networks,Hybrid,7,2204.04348,Neuronal diversity can improve machine learning for physics and beyond,,0.9579022526741028
+Neural Networks,Hybrid,8,2304.03122,"Is it conceivable that neurogenesis, neural Darwinism, and species
+  evolution could all serve as inspiration for the creation of evolutionary
+  deep neural networks?",,0.9574434161186218
+Neural Networks,Hybrid,9,2204.02921,A survey on recently proposed activation functions for Deep Learning,,0.9566035866737366
+Neural Networks,Hybrid,10,1905.12135,"Single neuron-based neural networks are as efficient as dense deep
+  neural networks in binary and multi-class recognition problems",,0.956554651260376
+Diffusion,Dense,1,astro-ph/0511670,Island Universes,,0.933701753616333
+Diffusion,Dense,2,cs/9902017,Not Available,,0.928928554058075
+Diffusion,Dense,3,math/0609117,"The small-time behaviour of diffusion and time-changed diffusion
+  processes on the line",,0.9268261790275574
+Diffusion,Dense,4,cond-mat/9904205,"Microscopic Simulation of Reaction-Diffusion Processes and Applications
+  to Population Biology and Product Marketing",,0.9251697659492493
+Diffusion,Dense,5,1411.0573,"Stochastic Chemical Kinetics. Theory and (Mostly) Systems Biological
+  Applications, P. Erdi, G. Lente. Springer (2014)",,0.9245681762695312
+Diffusion,Dense,6,0712.0392,Collaborative Gain in Resource Sharing Communication Networks,,0.9222395420074463
+Diffusion,Dense,7,physics/0511142,Withdrawal,,0.9220602512359619
+Diffusion,Dense,8,hep-ph/9611274,Flaton Inflation Model,,0.9199963808059692
+Diffusion,Dense,9,hep-ph/0412415,Conference Summary,,0.9191586375236511
+Diffusion,Dense,10,1003.1896,Love kills Penna ageing model,,0.9179928302764893
+Diffusion,Sparse,1,1802.04437,Diffusion in translucent media,,0.9826968312263489
+Diffusion,Sparse,2,2003.10574,Diffusion: Quiescence and Perturbation,,0.9818841814994812
+Diffusion,Sparse,3,1511.06613,Probabilistic Diffusion in Random Network Graphs,,0.9817630052566528
+Diffusion,Sparse,4,2508.11110,Diffusion is a code repair operator and generator,,0.9815646409988403
+Diffusion,Sparse,5,1204.2550,Diffusion in quantum geometry,,0.9813941717147827
+Diffusion,Sparse,6,cond-mat/9710025,Diffusion process in a deterministically forced flow,,0.9810470342636108
+Diffusion,Sparse,7,2003.11911,Resilient Distributed Diffusion for Multi-task Estimation,,0.9806806445121765
+Diffusion,Sparse,8,2409.10494,"Incorporating Classifier-Free Guidance in Diffusion Model-Based
+  Recommendation",,0.9806562662124634
+Diffusion,Sparse,9,2105.03155,Diffusion Mechanism in Residual Neural Network: Theory and Applications,,0.9805748462677002
+Diffusion,Sparse,10,1811.10907,"Efficient Image Retrieval via Decoupling Diffusion into Online and
+  Offline Processing",,0.980500340461731
+Diffusion,Hybrid,1,1810.05496,Physics and modelling of intracellular diffusion,,0.9450579881668091
+Diffusion,Hybrid,2,2306.04542,On the Design Fundamentals of Diffusion Models: A Survey,,0.9437003135681152
+Diffusion,Hybrid,3,2203.11816,"A Novel Exploration of Diffusion Process based on Multi-types
+  Galton-Watson Forests",,0.9430493116378784
+Diffusion,Hybrid,4,2011.08967,"Diffusion plays an unusual role in ecological quasi-neutral competition
+  in metapopulations",,0.941596508026123
+Diffusion,Hybrid,5,quant-ph/0702237,"Dynamical diffusion as the approximation of one quantum particle
+  dynamics",,0.9411529898643494
+Diffusion,Hybrid,6,1508.06738,"Characterization and Control of Diffusion Processes in Multi-Agent
+  Networks",,0.9406249523162842
+Diffusion,Hybrid,7,1906.02856,Diffusion on dynamic contact networks with indirect transmission links,,0.9403949975967407
+Diffusion,Hybrid,8,2410.02543,Diffusion Models are Evolutionary Algorithms,,0.940381646156311
+Diffusion,Hybrid,9,1802.04437,Diffusion in translucent media,,0.49134841561317444
+Diffusion,Hybrid,10,2003.10574,Diffusion: Quiescence and Perturbation,,0.4909420907497406

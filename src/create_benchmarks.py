@@ -1,6 +1,7 @@
 import os
 import time
 import pandas as pd
+import numpy as np
 from datetime import datetime
 from pipeline import SCETPipeline
 import utilities.aggregate as agg
@@ -21,19 +22,25 @@ logger.info("Initializing Pipeline...")
 pipeline = SCETPipeline()
 
 
+def _jaccard_similarity(list1, list2):
+    s1 = set(list1)
+    s2 = set(list2)
+    return len(s1.intersection(s2)) / len(s1.union(s2)) if len(s1.union(s2)) > 0 else 0
+
+
+
 def benchmark_pipeline():
     
     queries = [
-        "Transformer Attention",
+        "Transformer",
+        "Corona",
+        "Entropy",
+        "Token",
         "Deep Learning",
         "CRISPR",
-        "Dark Matter",
-        "Quantum Computing",
         "Climate Change",
-        "Generative Adversarial Networks",
-        "Reinforcement Learning",
-        "Graph Neural Networks",
-        "Self-Supervised Learning"
+        "Diffusion",
+        "Vector"
     ]
     
     results = []
@@ -87,7 +94,7 @@ def benchmark_pipeline():
     out_file = os.path.join(results_dir, f"pipeline/{now}.csv")
     df_results = pd.DataFrame(results)
     df_results.to_csv(out_file, index=False)
-    logger.info(f"Benchmark complete. Results saved to {out_file}")
+    logger.info(f"Pipeline benchmark complete.")
 
 
 
@@ -129,13 +136,13 @@ def benchmark_clustering():
     output_file = os.path.join(results_dir, f"clustering/{now}.csv")
     df_results = pd.DataFrame(results)
     df_results.to_csv(output_file, index=False)
-    logger.info(f"Benchmark complete. Results saved to {output_file}")
+    logger.info(f"Clustering benchmark complete.")
 
     # create plot
-    logger.info("Generating Scalability Plot...")
+    logger.info("Generating Cluster Scalability Plot...")
     plt.figure(figsize=(10, 6))
     plt.plot(df_results['n_papers'], df_results['time_sec'], marker='o', linestyle='-', color='b')
-    plt.title('Clustering Scalability (Time vs N Papers)')
+    plt.title('Clustering Scalability')
     plt.xlabel('Number of Papers')
     plt.ylabel('Time (seconds)')
     plt.grid(True)
@@ -144,9 +151,99 @@ def benchmark_clustering():
     logger.info(f"Plot saved to {image_dir}/clustering_scalability.png")
 
 
+def benchmark_ablation():
+    queries = [
+        "Transformer",
+        "Corona",
+        "Entropy",
+        "Token",
+        "Attention",
+        "Neural Networks",
+        "Diffusion"
+    ]
+    
+    summary_results = []
+    detailed_results = []
+    
+    logger.info("Starting Ablation study (Hybrid vs Dense vs Sparse)...")
+    
+    for query in queries:
+        logger.info(f"Processing query: {query}")
+        
+        # Dense
+        df_dense = pipeline.search.search_papers(query, limit=50, alpha=1.0)
+        ids_dense = df_dense['arxiv_id'].tolist() if not df_dense.empty else []
+        # Sparse
+        df_sparse = pipeline.search.search_papers(query, limit=50, alpha=0.0)
+        ids_sparse = df_sparse['arxiv_id'].tolist() if not df_sparse.empty else []
+        # Hybrid
+        df_hybrid = pipeline.search.search_papers(query, limit=50, alpha=0.5)
+        ids_hybrid = df_hybrid['arxiv_id'].tolist() if not df_hybrid.empty else []
+
+        # calculate overlaps
+        jaccard_dense_hybrid = _jaccard_similarity(ids_dense, ids_hybrid)
+        jaccard_sparse_hybrid = _jaccard_similarity(ids_sparse, ids_hybrid)
+        jaccard_dense_sparse = _jaccard_similarity(ids_dense, ids_sparse)
+        
+        summary_results.append({
+            "query": query,
+            "jaccard_dense_hybrid": jaccard_dense_hybrid,
+            "jaccard_sparse_hybrid": jaccard_sparse_hybrid,
+            "jaccard_dense_sparse": jaccard_dense_sparse,
+            "n_results_dense": len(ids_dense),
+            "n_results_sparse": len(ids_sparse),
+            "n_results_hybrid": len(ids_hybrid),
+            "param_limit": 50,
+            "param_alpha_dense": 1.0,
+            "param_alpha_sparse": 0.0,
+            "param_alpha_hybrid": 0.5
+        })
+        
+        # store top 10 for each type
+        for method, df in [("Dense", df_dense), ("Sparse", df_sparse), ("Hybrid", df_hybrid)]:
+            for i, row in df.head(10).iterrows():
+                detailed_results.append({
+                    "query": query,
+                    "method": method,
+                    "rank": i+1,
+                    "arxiv_id": row['arxiv_id'],
+                    "title": row.get('title', ''),
+                    "year": row.get('publication_year', ''),
+                    "score": row['score']
+                })
+
+    # save results
+    os.makedirs(os.path.join(results_dir, 'ablation'), exist_ok=True)
+    pd.DataFrame(summary_results).to_csv(os.path.join(results_dir, f"ablation/{now}_summary.csv"), index=False)
+    pd.DataFrame(detailed_results).to_csv(os.path.join(results_dir, f"ablation/{now}_detail.csv"), index=False)
+    logger.info(f"Ablation benchmark complete.")
+
+    logger.info("Generating Ablation Plot...")
+    df_summary = pd.DataFrame(summary_results)
+    queries = df_summary['query']
+    x = np.arange(len(queries))
+    width = 0.25
+    plt.figure(figsize=(12, 6))
+    plt.bar(x - width, df_summary['jaccard_dense_hybrid'], width, label="$\\text{Dense} \\cap \\text{Hybrid}$")
+    plt.bar(x, df_summary['jaccard_sparse_hybrid'], width, label="$\\text{Sparse} \\cap \\text{Hybrid}$")
+    plt.bar(x + width, df_summary['jaccard_dense_sparse'], width, label="$\\text{Dense} \\cap \\text{Sparse}$")
+    
+    plt.xlabel('Query')
+    plt.ylabel('Jaccard Similarity')
+    plt.title('Overlap between Retrieval Methods (Top-50)')
+    plt.xticks(x, queries)
+    plt.legend()
+    plt.tight_layout()
+    os.makedirs(image_dir, exist_ok=True)
+    plt.savefig(os.path.join(image_dir, "ablation_overlap.png"))
+    logger.info(f"Plot saved to {image_dir}/ablation_overlap.png")
+
+
+
 def main():
     benchmark_pipeline()
     benchmark_clustering()
+    benchmark_ablation()
 
 if __name__ == "__main__":
     main()
