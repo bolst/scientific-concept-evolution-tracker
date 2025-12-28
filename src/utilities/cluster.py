@@ -108,6 +108,10 @@ class PaperCluster:
             top_tokens = sorted(token_weights.items(), key=lambda x: x[1], reverse=True)[:5]
             decoded_tokens = [self.embedder.sparse_tokenizer.decode([token]) for token, _ in top_tokens]
             
+            # sometimes cluster labels are generated as tokens that are
+            # obviously incorrectly parsed (e.g., ##er or ##ing), so just filter them out for now
+            # TODO: fix clustering
+            decoded_tokens = [d for d in decoded_tokens if '#' not in d]
             # use decoded tokens (i.e., sub-concepts) as labels
             label = ", ".join(decoded_tokens)
             cluster_labels[cluster_id] = label
