@@ -1,5 +1,6 @@
 import os
 import time
+import shutil
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -11,10 +12,13 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-image_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "doc", "report", "images")
-os.makedirs(image_dir, exist_ok=True)
-results_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "benchmarks")
+root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+results_dir = os.path.join(root_path, "benchmarks")
 os.makedirs(results_dir, exist_ok=True)
+image_dir = os.path.join(root_path, "doc", "report", "images")
+os.makedirs(image_dir, exist_ok=True)
+doc_results_dir = os.path.join(root_path, "doc", "report", "benchmarks")
+os.makedirs(doc_results_dir, exist_ok=True)
 
 now = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -94,6 +98,18 @@ def benchmark_pipeline():
     out_file = os.path.join(results_dir, f"pipeline/{now}.csv")
     df_results = pd.DataFrame(results)
     df_results.to_csv(out_file, index=False)
+    # output summary
+    out_file = os.path.join(results_dir, f"pipeline/{now}_summary.csv")
+    total_time = df_results.search_time_sec + df_results.cluster_time_sec + df_results.era_detection_time_sec + df_results.pivotal_papers_time_sec
+    df_avg = pd.DataFrame(columns=['stage', 'avg_time_sec'])
+    df_avg.loc[0] = ['Hybrid Search', np.average(df_results.search_time_sec)]
+    df_avg.loc[1] = ['Concept Clustering', np.average(df_results.cluster_time_sec)]
+    df_avg.loc[2] = ['Era Detection', np.average(df_results.era_detection_time_sec)]
+    df_avg.loc[3] = ['Pivotal Paper ID', np.average(df_results.pivotal_papers_time_sec)]
+    df_avg['percent_time_sec'] = df_avg.avg_time_sec / df_avg.avg_time_sec.sum() * 100
+    df_avg.loc[4] = ['Total', df_avg.avg_time_sec.sum(), df_avg.percent_time_sec.sum()]
+    df_avg.to_csv(out_file, index=False)
+    
     logger.info(f"Pipeline benchmark complete.")
 
 
@@ -239,11 +255,26 @@ def benchmark_ablation():
     logger.info(f"Plot saved to {image_dir}/ablation_overlap.png")
 
 
+def copy_to_report():
+    # define files to copy
+    files = [
+        (f"pipeline/{now}_summary.csv", "pipeline_summary.csv"),
+        (f"clustering/{now}.csv", "clustering.csv"),
+        (f"ablation/{now}_summary.csv", "ablation.csv"),
+    ]
+    # copy files
+    for src, dest in files:
+        shutil.copy(
+            os.path.join(results_dir, src), 
+            os.path.join(doc_results_dir, dest)
+            )
 
 def main():
     benchmark_pipeline()
     benchmark_clustering()
     benchmark_ablation()
+
+    copy_to_report()
 
 if __name__ == "__main__":
     main()
