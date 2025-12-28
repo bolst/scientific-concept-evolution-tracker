@@ -158,7 +158,6 @@ def benchmark_clustering():
     logger.info("Generating Cluster Scalability Plot...")
     plt.figure()
     plt.plot(df_results['n_papers'], df_results['time_sec'], marker='o', linestyle='-', color='b')
-    plt.title('Clustering Scalability')
     plt.xlabel('Number of Papers')
     plt.ylabel('Time (seconds)')
     plt.grid(True)
@@ -246,7 +245,6 @@ def benchmark_ablation():
     
     plt.xlabel('Query')
     plt.ylabel('Jaccard Similarity')
-    plt.title('Overlap between Retrieval Methods (Top-50)')
     plt.xticks(x, queries, rotation=45)
     plt.legend()
     plt.tight_layout()
