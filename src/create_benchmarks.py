@@ -176,7 +176,7 @@ def benchmark_ablation():
         "Neural Networks",
         "Diffusion"
     ]
-    
+    search_limit = 500
     summary_results = []
     detailed_results = []
     
@@ -186,13 +186,13 @@ def benchmark_ablation():
         logger.info(f"Processing query: {query}")
         
         # Dense
-        df_dense = pipeline.search.search_papers(query, limit=50, alpha=1.0)
+        df_dense = pipeline.search.search_papers(query, limit=search_limit, alpha=1.0)
         ids_dense = df_dense['arxiv_id'].tolist() if not df_dense.empty else []
         # Sparse
-        df_sparse = pipeline.search.search_papers(query, limit=50, alpha=0.0)
+        df_sparse = pipeline.search.search_papers(query, limit=search_limit, alpha=0.0)
         ids_sparse = df_sparse['arxiv_id'].tolist() if not df_sparse.empty else []
         # Hybrid
-        df_hybrid = pipeline.search.search_papers(query, limit=50, alpha=0.5)
+        df_hybrid = pipeline.search.search_papers(query, limit=search_limit, alpha=0.5)
         ids_hybrid = df_hybrid['arxiv_id'].tolist() if not df_hybrid.empty else []
 
         # calculate overlaps
@@ -208,7 +208,7 @@ def benchmark_ablation():
             "n_results_dense": len(ids_dense),
             "n_results_sparse": len(ids_sparse),
             "n_results_hybrid": len(ids_hybrid),
-            "param_limit": 50,
+            "param_limit": search_limit,
             "param_alpha_dense": 1.0,
             "param_alpha_sparse": 0.0,
             "param_alpha_hybrid": 0.5
