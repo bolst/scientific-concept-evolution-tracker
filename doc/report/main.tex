@@ -504,7 +504,7 @@ The system identified the following key eras for the Deep Learning cluster (Figu
 \end{itemize}
 
 \subsubsection{Entropy}
-For ``Entropy'', the system identifies a dual narrative between the physical and information sciences.
+For ``Entropy'', the system identifies a two concepts between the physical and information sciences.
 In the context of physics and thermodynamics, the concept maintains a steady, consistent relevancy over time, as expected for a foundational physical law.
 However, a distinct divergence is observed starting in 2008, where the concept's application in Information Theory begins to grow significantly.
 This growth is likely correlated with the renaissance of deep learning \cite{deep-learning}, where concepts like cross-entropy became directly associated with loss functions for training neural networks.
@@ -578,13 +578,13 @@ Our use of Decision Tree Regression addresses this by allowing the data to defin
 Because a decision tree splits data based on minimizing variance, it naturally places boundaries at the points of maximum change.
 This allows SCET to capture the ``sharp edges'' of scientific history, such as the sudden emergence of COVID-19 literature in early 2020 or the immediate impact of \textit{Attention Is All You Need} in late 2017.
 By quantifying these shifts, we can potentially predict the emergence of new subfields.
-For instance, a sudden increase in the variance of a concept's embedding cluster might indicate a fracturing of consensus or the birth of a new application domain.
+For instance, a sudden increase in the variance of a concept's embedding cluster might indicate a split of consensus or the birth of a new application domain.
 
 \subsection{Scalability vs. Depth Trade-off}
 Our benchmarks highlight a fundamental trade-off between interactivity and analytical depth.
 The clustering step is $O(N \cdot K \cdot D)$, where $N$ is the number of papers, $K$ is clusters, and $D$ is vector dimension (768).
 With $N=1000$, the system is responsive (2--3s).
-However, limiting the analysis to the top 1000 papers means we might miss subtle, long-tail evolutionary trends that appear in lower-ranked documents.
+However, limiting the analysis to the top 1000 papers means we might miss subtle, long-running evolutionary trends that appear in lower-ranked documents.
 Increasing $N$ to 5000 improves the semantic resolution but pushes latency to near $20s$, breaking the interactive feedback loop.
 
 A potential solution for future work is to implement a \textit{hierarchical} approach: perform a fast, coarse-grained clustering on a large dataset using a dimensionality-reduced vector space (for example, using PCA to reduce 768d to 64d), and then perform fine-grained clustering on the user's region of interest.
@@ -659,12 +659,12 @@ This would enable the tracking of concepts as they migrate across language barri
 \section{Conclusion}
 
 In this work, we presented the Scientific Concept Evolution Tracker (SCET), a scalable system for quantifying and visualizing the semantic drift of scientific terms.
-By integrating a hybrid vector search engine (Milvus) with a relational metadata store (PostgreSQL), we achieved a system that is both semantically powerful and lexically precise.
-Our novel methodology of combining dynamic K-Means clustering with temporal segmentation allows users to automatically discover distinct sub-concepts and their active eras without manual specification.
+By integrating a hybrid vector search engine (Milvus) with a relational metadata store (PostgreSQL), we achieved a system that is both powerful in semantics and lexically precise.
+Our methodology of combining dynamic K-Means clustering with temporal segmentation allows users to inherently discover distinct sub-concepts and their active eras with convenience.
 
 Our experimental evaluation demonstrates that SCET is capable of interactive performance, processing complex queries over thousands of documents in under 4 seconds.
 The ablation study highlighted the critical importance of the hybrid retrieval strategy, revealing that semantic and lexical searches often return disjoint sets of results for scientific terminology.
-Case studies on ``Transformer'', ``Entropy'', ``Token'' confirmed the system's ability to correctly disambiguate polysemous terms and identify historical turning points.
+Case studies on ``Transformer'', ``Entropy'', ``Token'' confirmed the system's ability to correctly disambiguate similar terms and identify historical turning points.
 SCET is a notable exploration into the field of the ``Science of Science'', and serves as a tool for users to navigate the ever-expanding corpus of scientific literature via both semantic and temporal methods.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
