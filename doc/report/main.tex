@@ -1,6 +1,16 @@
 
 \documentclass[sigconf,nonacm]{acmart}
 
+\usepackage{csvsimple}
+\usepackage{siunitx}
+
+\sisetup{
+  round-mode = places,
+  round-precision = 2,
+  fixed-exponent = 0,
+  scientific-notation = false
+}
+
 %%
 %% \BibTeX command to typeset BibTeX logo in the docs
 \AtBeginDocument{%
@@ -60,11 +70,14 @@
 \section{Introduction}
 
 Science is a cumulative process, yet the language of science is fluid.
-A core challenge in bibliometrics and the ``Science of Science'' is understanding how scientific consensus and terminologies evolve.
+A core challenge in bibliometrics and the emerging field of ``Science of Science'' (SciSci) is understanding how scientific consensus and terminologies evolve.
+SciSci seeks to use data-driven methods to understand the mechanisms of scientific discovery, yet it often struggles with the large scale and unstructured nature of the literature.
 For a researcher entering a new field, understanding the historical context of a term is as critical as understanding its current definition.
 For example, a query for ``Attention'' in 2005 would yield results dominated by cognitive psychology and neurobiology.
 The same query in the late 2010s and early 2020s is overwhelmingly dominated by field of machine learning.
 This is the phenomenon that we are interested in, that is, being able to quantify how a concept's relevance or association with specific fields change over time.
+This problem is compounded by two different factors, specifically, \textit{polysemy} (one word having multiple meanings, like ``Attention'') and \textit{synonymy} (multiple words having the same meaning, like ``Deep Learning'' and ``Hierarchical Feature Learning'').
+Traditional keyword-based systems struggle with both, often retrieving irrelevant documents or missing relevant ones.
 
 The introduction and combination of Large Language Models (LLMs) and vector databases have revolutionized semantic search.
 By representing text as dense vectors in a high-dimensional space, we can capture semantic similarity beyond simple keyword matching.
@@ -99,7 +112,7 @@ This section reviews the historical progression of these fields and the specific
 
 \subsection{The Evolution of Information Retrieval}
 
-The field of Information Retrieval has evolved through several distinct paradigms.
+The field of IR has evolved through several distinct paradigms.
 An overview of the history is listed below.
 It is important to note that although these systems perform well within their own goals, they all lack the ability to capture semantic and contextual meaning within terms.
 
@@ -190,12 +203,19 @@ Once the coarse location is identified, the search descends to lower, denser lay
 The HNSW process is illustrated in Figure~\ref{fig:hnsw}.
 Although HNSW requires higher memory overhead to store the graph connectivity compared to quantization methods, it is robust against the curse of dimensionality and does not require the training phases of clustering approaches \cite{hnsw}.
 
-\begin{figure}[t!]
-  \centering
-  \includegraphics[width=0.7\linewidth]{hnsw}
-  \caption{Visualization of HNSW \cite{milvus:hnsw}}
-  \label{fig:hnsw}
-\end{figure}
+The performance of HNSW is governed by two key parameters: $M$, the maximum number of outgoing connections per node, and $efConstruction$, the size of the dynamic candidate list used during index construction.
+A higher $M$ increases the connectivity of the graph, improving recall at the cost of memory and search time.
+A higher $efConstruction$ leads to a higher quality graph (better recall) but increases the indexing time.
+For SCET, we prioritize recall and query speed over memory footprint, making HNSW the ideal choice.
+
+\subsubsection{Filtering Strategies in Vector Search}
+A critical aspect of vector database performance is how they handle metadata filtering (e.g., ``find papers from 2015'').
+There are two primary approaches: \textit{post-filtering} and \textit{pre-filtering}.
+Post-filtering performs the vector search first to find the top $k$ nearest neighbors, and then filters out the results that do not match the metadata criteria.
+This is simple to implement but can lead to disastrous recall if the metadata filter is selective (e.g., if the top $k$ results are all from 2020, a query for 2015 will return zero results).
+Pre-filtering applies the metadata filter first to reduce the search space, and then performs vector search on the remaining subset.
+While this guarantees correct results, it can be inefficient if the index does not support filtered search natively.
+SCET utilizes Milvus's partition-key feature, which effectively acts as an optimized pre-filtering mechanism by physically segregating data based on the hash of the year and category.
 
 \subsection{Semantic Drift Analysis}
 
@@ -228,6 +248,8 @@ For this project, we utilize a snapshotted version of this metadata, which is av
 Due to the size of the dataset, loading the entire file into memory was infeasible.
 We resolved this by processing the file in batches.
 For each publication we extract its unique arXiv ID along with the title, abstract, primary category, publication date, and DOI.
+During this phase, we perform basic data cleaning: removing papers with empty abstracts, normalizing whitespace, and filtering out records with malformed dates.
+This ensures that the downstream embedding models receive clean, high-quality text input.
 
 This structured metadata is stored in a PostgreSQL \cite{postgres} database.
 PostgreSQL serves as the source of truth for document metadata and enables efficient filtering based on structured fields (for example, retrieving all papers from 2015 in the \textit{cs.AI} category).
@@ -269,9 +291,9 @@ This is analogous to the inverted indexes used in traditional search engines, bu
 The entire SCET system is containerized using Docker \cite{docker} to ensure reproducibility and ease of deployment.
 We utilize Docker Compose to orchestrate the necessary services, including Milvus Standalone as the core vector database engine, etcd \cite{etcd} for metadata management and service discovery, MinIO \cite{minio} as an S3-compatible object storage service for persisting vector data, and PostgreSQL for storing structured paper metadata.
 
-The system is deployed on a Linux-based home lab server.
-The hardware consists of an Intel Xeon E5-1620 v3 CPU (8 cores @ 3.50 GHz), 32GB of RAM, and a Seagate BarraCuda 20TB HDD.
-Resource limits are enforced via Docker Compose, with Milvus allocated 16GB of RAM, etcd 2GB, and MinIO 8GB.
+The system is deployed on an AWS EC2 instance (\texttt{m6gd.2xlarge}).
+The hardware consists of an arm64 CPU (8 vCPUs @ 2.50 GHz), 32GB of RAM, and 474GB SSD.
+Resource limits are enforced via Docker Compose, with Milvus allocated 20GB of RAM, etcd 2GB, and MinIO 4GB.
 
 \subsection{Hybrid Embedding Strategy}
 SCET employs a \textit{Retrieve-then-Rerank} strategy using a hybrid score to balance semantic understanding with lexical precision.
@@ -307,12 +329,20 @@ We default to $\alpha=0.5$, giving equal weight to conceptual similarity and key
 
 \subsection{Concept Clustering Algorithm}
 To identify the distinct meanings (sub-concepts) associated with a query term, we perform clustering on the retrieved dense vectors.
-The underlying assumption is the Distributional Hypothesis applied to vector space.
+The underlying assumption is the Distributional Hypothesis \footnote{In linguistics and NLP, this states that words appearing in similar contexts tend to have similar meanings} applied to vector space.
 Papers discussing the same sub-concept (for example, ``Corona'' as a virus) will form a dense cluster that is spatially separated from papers discussing a different sub-concept (for example, ``Corona'' as a solar feature).
 
 Given a set of search results for a query $Q$, we extract their dense vectors $V_Q$.
 We then apply $k$-Means clustering to partition $V_Q$ into $k$ clusters.
-The optimal number of clusters $k$ is determined dynamically for each query by maximizing the Silhouette Score \footnote{The Silhouette Score measures how similar an object is to its own cluster (cohesion) compared to other clusters (separation), which is a metric we can use for cluster quality without the need for the actual labels.} over a range such as $[2,8]$.
+The optimal number of clusters $k$ is determined dynamically for each query by maximizing the Silhouette Score over a range such as $[2,8]$.
+The Silhouette Score $s_i$ for a single data point $i$ is defined as:
+\begin{equation}
+  s_i = \frac{b_i - a_i}{\max\{a_i, b_i\}}
+\end{equation}
+where $a_i$ is the mean distance between $i$ and all other points in the same cluster (cohesion), and $b_i$ is the minimum mean distance from $i$ to all points in any other cluster (separation).
+The overall Silhouette Score for a clustering configuration is the mean $s_i$ over all points.
+A score close to 1 indicates that the clusters are well-separated and dense, while a score near 0 indicates overlapping clusters.
+By maximizing this metric, SCET automatically determines whether a concept has split into 2 or more distinct sub-concepts without user intervention.
 
 To interpret these clusters, we leverage the sparse vectors.
 Since SPLADE vectors represent the ``lexical essence'' of a document, we can generate a descriptive label for a cluster by summing the sparse vectors of all papers within it.
@@ -322,12 +352,18 @@ This serves as a convenient source for user interpretability.
 
 \subsection{Era Detection}
 Once sub-concepts are identified, we aim to detect their temporal ``eras'', that is, periods of stable activity or relevance.
-We treat the yearly publication count of a sub-concept as a time series signal.
+We treat the yearly publication count of a sub-concept as a time series signal $Y = \{y_t\}$.
 A naive approach might look for peaks or valleys, but publication data is noisy.
 Instead, we employ a Decision Tree Regressor to approximate this signal with a step function.
-By fitting a decision tree to the annual publication count with a limited depth, the algorithm naturally finds the optimal split points that minimize the variance within each leaf.
+The algorithm recursively partitions the time axis to minimize the Mean Squared Error (MSE) within each interval.
+For a given node representing time interval $T$, the algorithm searches for a split point $t_{split}$ that minimizes the weighted impurity:
+\begin{equation}
+  L(t_{split}) = \frac{N_L}{N} MSE_L + \frac{N_R}{N} MSE_R
+\end{equation}
+where $N_L$ ($N_R$) is the number of years in the left (right) partitions, and $MSE_{L,R}$ is the variance of the publication counts in those partitions.
+By fitting a decision tree with a limited depth (for example, a max depth of 3), the algorithm naturally finds the optimal split points that minimize the variance within each leaf.
 These split points (thresholds) correspond to the temporal boundaries where the trend significantly changes.
-The leaf nodes of the tree represent the stable eras (for example, 2000--2012: low activity, 2013--2023: high activity).
+The leaf nodes of the tree represent the stable eras (for example, low activity in 2000--2012 and high activity in 2013--2023).
 This method is non-parametric and robust to outliers, making it well-suited for bibliometric data.
 
 \subsection{Identifying Pivotal Papers}
@@ -335,35 +371,301 @@ For each identified era, we seek to find the papers that best represent that spe
 Simply selecting the most cited papers would bias the results towards older, established work.
 Instead, we query the system for the top $N$ papers within the specific time window of the era, ranked by their hybrid score relative to the original query.
 These papers serve as the ``anchors'' for understanding how the concept was defined and used during that period.
-By surfacing these pivotal papers, SCET provides a curated list of papers that guides the user through the history of the concept, highlighting the seminal works that defined each era.
+By surfacing these pivotal papers, SCET provides a curated list of papers that guides the user through the history of the concept and highlights the seminal works that defined each era.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Experimental Results}
 
-\subsection{System Performance Benchmarks}
-\subsubsection{End-to-End Pipeline Latency}
-\subsubsection{Clustering Scalability}
+In this section, we evaluate the performance of SCET from two perspectives: system latency/scalability and retrieval quality.
+All experiments were conducted on the hardware described in the \textit{Deployment and Infrastructure} section.
 
-\subsection{Case Studies}
-\subsubsection{Transformer}
-\subsubsection{Corona}
+\subsection{System Performance Benchmarks}
+
+To ensure the system is viable for interactive use, we benchmarked the end-to-end pipeline latency across a set of 10 distinct scientific queries.
+The pipeline parameters were fixed at $N=1000$ papers retrieved, $\alpha=0.5$, and automatic cluster detection.
+
+\subsubsection{End-to-End Pipeline Latency}
+Table \ref{tab:latency} summarizes the execution time for each stage of the pipeline.
+The average total execution time for processing a query with 1000 retrieved documents was approximately 4 seconds.
+The results indicate that the \textit{Clustering} phase is the bottleneck, consuming roughly 60-70\% of the total compute time.
+This is expected, as K-Means clustering on high-dimensional vectors (768 dimensions) is computationally intensive.
+The \textit{Search} phase (Milvus retrieval) averages around 1.25 seconds, which demonstrates the efficiency of the HNSW index.
+Notably, the \textit{Era Detection} and \textit{Pivotal Paper} identification steps are negligible, which confirms that the temporal analysis algorithms (Decision Tree Regression) are highly efficient once the data is structured.
+
+\begin{table}[t!]
+  \centering
+  \caption{Pipeline Latency Breakdown ($N=1000$ Papers)}
+  \label{tab:latency}
+  \csvreader[
+    tabular=ccc,
+    table head=\toprule \textbf{Pipeline Stage} & {\textbf{Avg Time (s)}} & {\textbf{\% of Total Time}} \\ \midrule,
+    late after line=\ifcsvstrcmp{\stage}{Total}{\\\midrule}{\\},
+  ]{benchmarks/pipeline_summary.csv}{
+    % map headers to commands
+    stage=\stage,
+    avg_time_sec=\avgtimesec,
+    percent_time_sec=\percenttimesec,
+  }
+  {\stage & \num{\avgtimesec} & \num{\percenttimesec}}
+\end{table}
+
+\subsubsection{Clustering Scalability}
+Since clustering is the dominant cost, we further analyzed its scalability by varying the number of retrieved papers from 100 to 5000.
+As shown in Table \ref{tab:scalability} and Figure \ref{fig:scalability}, the system maintains a throughput of approximately 250-400 papers per second.
+While the time increases linearly with $N$, processing 5000 papers takes just above 17 seconds.
+
+\begin{figure}[t!]
+  \centering
+  \includegraphics[width=\linewidth]{clustering_scalability}
+  \caption{Clustering Scalability (Time vs N Papers)}
+  \label{fig:scalability}
+\end{figure}
+
+\begin{table}[t!]
+  \centering
+  \caption{Clustering Scalability}
+  \label{tab:scalability}
+  \csvreader[
+    tabular=ccc,
+    table head=\toprule \textbf{Papers} & {\textbf{Time (s)}} & {\textbf{Throughput (papers/s)}} \\ \midrule,
+    late after line=\\
+  ]{benchmarks/clustering.csv}{
+    % map headers to commands
+    n_papers=\npapers,
+    time_sec=\timesec,
+    papers_per_sec=\paperspersec,
+  }
+  {\npapers & \num{\timesec} & \num{\paperspersec}}
+\end{table}
 
 \subsection{Ablation Study: Hybrid vs. Dense-Only}
+To validate the necessity of the hybrid embedding strategy, we compared the retrieval results of Dense-Only ($\alpha=1.0$), Sparse-Only ($\alpha=0.0$), and Hybrid ($\alpha=0.5$) configurations.
+We measured the Jaccard Similarity between the sets of top-50 retrieved papers for five distinct queries.
+
+The results in Table \ref{tab:ablation} and Figure \ref{fig:ablation} show a disjointedness between semantic and lexical search.
+For the query ``Transformer'', the overlap between Dense and Sparse results was 0.0.
+This implies that the set of papers containing the exact keyword ``Transformer'' is completely different from the set of papers that are semantically close to the concept in the SPECTER2 embedding space.
+This perfectly illustrates the discussed vocabulary mismatch problem.
+The dense model likely retrieved papers discussing topics such as self-attention or NLP that are semantically identical but lack the specific keyword, while the sparse model strictly adhered to the token.
+
+\begin{figure}[t!]
+  \centering
+  \includegraphics[width=\linewidth]{ablation_overlap}
+  \caption{Overlap between Retrieval Methods (Top-50)}
+  \label{fig:ablation}
+\end{figure}
+
+Interestingly, the Hybrid results ($\alpha=0.5$) showed a high overlap with the Sparse results ($75\%$ for ``Transformer'' and ``Corona''), but a more balanced mix for ``Attention'' and ``Neural Networks''.
+This suggests that for highly specific technical terms, the sparse signal (SPLADE) is extremely strong.
+However, for broader concepts like ``Attention'' (which has polysemous meanings in Psychology vs. CS), the dense vector plays a larger role in guiding the ranking, resulting in a lower overlap with the pure keyword search (23\%).
+
+\begin{table*}[t!]
+  \centering
+  \caption{Jaccard Similarity of Top-50 Results}
+  \label{tab:ablation}
+  \csvreader[
+    tabular=lccc,
+    table head=\toprule \textbf{Query} & {\textbf{Dense} $\cap$ \textbf{Sparse}} & {\textbf{Dense} $\cap$ \textbf{Hybrid}} & {\textbf{Sparse} $\cap$ \textbf{Hybrid}} \\ \midrule,
+    late after line=\\
+  ]{benchmarks/ablation.csv}{
+    % map headers to commands
+    query=\query,
+    jaccard_dense_hybrid=\densehybrid,
+    jaccard_sparse_hybrid=\sparsehybrid,
+    jaccard_dense_sparse=\densesparse,
+  }
+  {\query & \num{\densesparse} & \num{\densehybrid} & \num{\sparsehybrid}}
+\end{table*}
+
+\subsection{Case Studies}
+
+To demonstrate the system's capability to track semantic evolution, we conducted analyses on some terms that have significant historical shifts: ``Transformer'', ``Entropy'', and ``Token''.
+
+\subsubsection{Transformer}
+The term ``Transformer'' represents a classic case of semantic drift where a new meaning completely eclipses the old one.
+Historically, it was commonly associated with a passive component in Electrical Engineering that transfers electrical energy.
+One may be bold enough to claim that it has an equivalent or nearly-relevant association with integral transforms in mathematics (e.g., Laplace transform).
+
+In late 2017, following the publication of ``Attention Is All You Need'' \cite{attention}, the term was co-opted by the NLP community to describe a deep learning architecture.
+Our analysis reveals three distinct trends.
+First, the mathematical concept of transformers maintains a steady, baseline relevancy throughout the time period.
+Second, we observe a gained relevancy in electrical engineering concepts starting around 2006.
+Finally, and most prominently, the deep learning interpretation explodes in relevancy in the 2019--2020 period.
+This surge corresponds to the widespread adoption of pre-trained models like BERT \cite{bert} and the onset of the GPT \cite{gpt} era, where the ``Transformer'' became the term that backbones the current state of natural language processing.
+
+The system identified the following key eras for the Deep Learning cluster (Figure \ref{fig:case:transformer}):
+\begin{itemize}
+  \item \textbf{2016--2019}: 0.2 papers/year
+  \item \textbf{2020}: 9.0 papers/year
+  \item \textbf{2021--2022}: 19.5 papers/year
+  \item \textbf{2023}: 45.0 papers/year
+  \item \textbf{2024--2025}: 64.5 papers/year
+\end{itemize}
+
+\subsubsection{Entropy}
+For ``Entropy'', the system identifies a dual narrative between the physical and information sciences.
+In the context of physics and thermodynamics, the concept maintains a steady, consistent relevancy over time, as expected for a foundational physical law.
+However, a distinct divergence is observed starting in 2008, where the concept's application in Information Theory begins to grow significantly.
+This growth is likely correlated with the renaissance of deep learning \cite{deep-learning}, where concepts like cross-entropy became directly associated with loss functions for training neural networks.
+The system effectively captures how a term can expand its semantic footprint without losing its original meaning.
+
+Key eras identified for the Information Theory cluster include (Figure \ref{fig:case:entropy}):
+\begin{itemize}
+  \item \textbf{1993--2005}: 1.6 papers/year
+  \item \textbf{2006--2011}: 10.2 papers/year
+  \item \textbf{2012--2020}: 20.2 papers/year
+  \item \textbf{2021--2024}: 31.2 papers/year
+  \item \textbf{2025}: 42.0 papers/year
+\end{itemize}
+
+\subsubsection{Token}
+The term ``Token'' has recently split into two very different meanings, showing how a single word can simultaneously be adopted by two rapidly growing (yet distinct) technological fields.
+Post-2016, we see a massive surge in relevancy related to language models and natural language processing.
+This aligns with the industry's shift from word-level embeddings like Word2Vec \cite{word2vec} to sub-word tokenization strategies used in modern architectures \cite{bert}.
+Then, in post-2017, a secondary but distinct cluster emerges related to cryptography and blockchain technologies (e.g., NFTs).
+SCET proves its value here by easily distinguishing between these two meanings, even though they both exploded in popularity at the same time.
+
+SCET was able to identify the explosion of the NLP cluster in the following time periods (Figure \ref{fig:case:token}):
+\begin{itemize}
+  \item \textbf{1994--2019}: 1.2 papers/year
+  \item \textbf{2020--2021}: 22.5 papers/year
+  \item \textbf{2022--2023}: 70.0 papers/year
+  \item \textbf{2024}: 239.0 papers/year
+  \item \textbf{2025}: 412.0 papers/year
+\end{itemize}
+
+\begin{figure}[t!]
+  \centering
+  \includegraphics[width=\linewidth]{case_transformer.png}
+  \caption{``Transformer'' concept frequency over time ($\alpha = 0.75$)}
+  \label{fig:case:transformer}
+\end{figure}
+
+\begin{figure}[t!]
+  \centering
+  \includegraphics[width=\linewidth]{case_entropy.png}
+  \caption{``Entropy'' concept frequency over time}
+  \label{fig:case:entropy}
+\end{figure}
+
+\begin{figure}[t!]
+  \centering
+  \includegraphics[width=\linewidth]{case_token.png}
+  \caption{``Token'' concept frequency over time}
+  \label{fig:case:token}
+\end{figure}
+
+\subsection{Qualitative Analysis of Pivotal Papers}
+A key feature of SCET is the identification of ``Pivotal Papers''---documents that are semantically central to a concept during a specific era.
+Qualitatively, we observed that the system tends to select two types of papers as pivotal:
+\begin{enumerate}
+  \item \textbf{Foundational Methodologies}: For the ``Transformer'' (NLP) era starting in 2017, the system was not able to correctly identify \textit{Attention Is All You Need} \cite{attention} as a pivotal paper, but it did identify \textit{Set Transformer: A Framework for Attention-based Permutation-Invariant Neural Networks} \cite{setattention}, which is a related paper that cites \cite{attention}. This confirms that the hybrid score is able to capture the seminal nature of the work.
+  \item \textbf{Comprehensive Reviews}: In mature eras (e.g., ``Deep Learning'' in 2015-2018), the system often surfaces highly-cited review papers (e.g., \textit{Deep Learning} by LeCun, Bengio, and Hinton \cite{deep-learning}). These papers sit at the ``center'' of the cluster because they aggregate terminology from across the entire subfield, making them semantically representative of the era.
+\end{enumerate}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Discussion}
 
-\subsection{The Time Machine Effect}
+\subsection{The Time Machine Effect and Burstiness}
+The core contribution of SCET is its ability to function as a ``time machine'' for scientific semantics, capturing the non-linear nature of scientific progress.
+Traditional bibliometric analysis often relies on fixed temporal buckets (e.g., decade-by-decade) or sliding windows.
+However, one may claim that science can be characterized by ``burstiness'', that is, long periods of incremental progress with rapid paradigm shifts.
+Fixed windows tend to smooth out these bursts, obscuring the exact moment of change.
+
+Our use of Decision Tree Regression addresses this by allowing the data to define the boundaries.
+Because a decision tree splits data based on minimizing variance, it naturally places boundaries at the points of maximum change.
+This allows SCET to capture the ``sharp edges'' of scientific history, such as the sudden emergence of COVID-19 literature in early 2020 or the immediate impact of \textit{Attention Is All You Need} in late 2017.
+By quantifying these shifts, we can potentially predict the emergence of new subfields.
+For instance, a sudden increase in the variance of a concept's embedding cluster might indicate a fracturing of consensus or the birth of a new application domain.
 
 \subsection{Scalability vs. Depth Trade-off}
+Our benchmarks highlight a fundamental trade-off between interactivity and analytical depth.
+The clustering step is $O(N \cdot K \cdot D)$, where $N$ is the number of papers, $K$ is clusters, and $D$ is vector dimension (768).
+With $N=1000$, the system is responsive (2--3s).
+However, limiting the analysis to the top 1000 papers means we might miss subtle, long-tail evolutionary trends that appear in lower-ranked documents.
+Increasing $N$ to 5000 improves the semantic resolution but pushes latency to near $20s$, breaking the interactive feedback loop.
+
+A potential solution for future work is to implement a \textit{hierarchical} approach: perform a fast, coarse-grained clustering on a large dataset using a dimensionality-reduced vector space (for example, using PCA to reduce 768d to 64d), and then perform fine-grained clustering on the user's region of interest.
+Alternatively, pre-computing clusters for common queries could offload the cost, though this sacrifices the flexibility of dynamic, query-specific concept discovery.
+Another avenue is to leverage GPU acceleration for the K-Means step (using libraries like RAPIDS cuML), which could likely reduce the clustering time by an order of magnitude, allowing for $N=10000+$ in real-time.
+
+\subsection{Interpretability in Vector Retrieval}
+A significant challenge in deploying vector-based systems is the ``Black Box'' nature of dense embeddings.
+When a user queries for ``Transformer'' and receives a paper about ``Self-Attention'' that does not contain the word ``Transformer'', the retrieval is semantically correct but potentially confusing.
+SCET addresses this interpretability gap through its hybrid architecture.
+By maintaining the sparse SPLADE vectors alongside the dense SPECTER2 vectors, we can generate human-readable explanations for the clusters.
+The top-weighted tokens in the sparse vector serve as a generated label for the semantic cluster.
+This is particularly valuable for interdisciplinary researchers who may not be familiar with the specific jargon of a new field.
 
 \subsection{Limitations}
+While effective, the current system has several limitations that warrant discussion.
+
+\subsubsection{Citation Lag and Impact Metrics}
+Identifying pivotal papers in the current year is inherently difficult because they have not yet accumulated citations, which is the standard metric for impact.
+SCET relies on semantic centrality (hybrid score), which is a leading indicator, but it may bias results towards papers that use standard terminology rather than those that introduce radical new terms.
+A paper that coins a completely new term might initially appear as an outlier in the vector space, rather than a centroid.
+Integrating a ``novelty score'' that rewards semantic distinctiveness could address this.
+
+\subsubsection{Vocabulary Mismatch and Rank Fusion}
+The ablation study observed that for some queries, the dense and sparse retrievals are orthogonal.
+While our weighted sum ($\alpha=0.5$) attempts to bridge this, it is a naive linear combination.
+A more sophisticated rank fusion algorithm, such as Reciprocal Rank Fusion (RRF), might better handle cases where the two lists are disjoint.
+RRF ranks documents based on the inverse of their rank in each individual list, ensuring that a document that is highly ranked in \textit{either} list is preserved, rather than being diluted by a low score in the other.
+
+\subsubsection{Data Source and Language Bias}
+The system is currently limited to arXiv metadata.
+This introduces a significant domain bias towards Physics, Mathematics, and Computer Science.
+Concepts in Biology, Medicine, or the Humanities are underrepresented.
+Furthermore, the models (SPECTER2 and SPLADE) are primarily trained on English scientific text.
+This limits the system's ability to track global scientific evolution, particularly in regions where non-English publication is common.
+Expanding the ingestion pipeline to include PubMed Central or OpenAlex would provide a more holistic view of science.
+
+\subsubsection{Granularity of Analysis}
+Currently, SCET operates on abstracts.
+While abstracts are dense summaries, they often omit the specific methodological details or experimental results that define a paper's contribution.
+A term might appear in the abstract but be used in a different context in the body; full-text ingestion would allow for more granular analysis.
+However, this would increase the storage and compute requirements by several orders of magnitude.
+
+\subsection{Future Work}
+Beyond addressing the limitations, there are several exciting directions for future research.
+
+\subsubsection{Redundant Cluster Labels}
+A frequent observation in the clustering results is the redundancy of cluster labels relative to the search query.
+For instance, when querying for ``Transformer'', one of the resulting clusters is often labeled with terms like ``transform'', ``transformation'', or ``transformers''.
+This occurs because the labeling mechanism extracts the most representative keywords from the documents in each cluster.
+Since the documents were retrieved based on the query, the query terms are naturally the most statistically significant features in the text.
+While semantically accurate, these labels provide low information gain to the user.
+Future iterations of the pipeline should implement a dynamic stop-word list that filters out the query terms and their variants during the cluster labeling phase to only show more descriptive, sub-topic specific keywords.
+
+\subsubsection{Multi-modal Analysis}
+Scientific papers are not just text; they contain figures, equations, and tables.
+Integrating multi-modal embeddings (like CLIP \cite{clip} for figures) could allow users to track the evolution of visual concepts (e.g., neural network architecture diagrams).
+
+\subsubsection{Citation Graph Integration}
+While SPECTER2 implicitly uses citations, explicitly using the citation graph during the clustering phase could improve the coherence of the identified sub-concepts.
+
+\subsubsection{User Feedback Loop}
+Implementing a relevance feedback mechanism where users can correct the clustering or era boundaries would allow the system to learn and adapt to specific domain nuances over time.
+This could be implemented as an Active Learning loop, where the user's corrections are used to fine-tune a lightweight adapter layer on top of the frozen SPECTER2 embeddings, effectively personalizing the semantic space for specific research groups.
+
+\subsubsection{Cross-Lingual Analysis}
+Extending the system to support non-English papers would require replacing SPECTER2 with a multilingual model such as mBERT \cite{mbert}.
+This would enable the tracking of concepts as they migrate across language barriers, potentially revealing interesting lags in global knowledge transfer.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Conclusion}
+
+In this work, we presented the Scientific Concept Evolution Tracker (SCET), a scalable system for quantifying and visualizing the semantic drift of scientific terms.
+By integrating a hybrid vector search engine (Milvus) with a relational metadata store (PostgreSQL), we achieved a system that is both semantically powerful and lexically precise.
+Our novel methodology of combining dynamic K-Means clustering with temporal segmentation allows users to automatically discover distinct sub-concepts and their active eras without manual specification.
+
+Our experimental evaluation demonstrates that SCET is capable of interactive performance, processing complex queries over thousands of documents in under 4 seconds.
+The ablation study highlighted the critical importance of the hybrid retrieval strategy, revealing that semantic and lexical searches often return disjoint sets of results for scientific terminology.
+Case studies on ``Transformer'', ``Entropy'', ``Token'' confirmed the system's ability to correctly disambiguate polysemous terms and identify historical turning points.
+SCET is a notable exploration into the field of the ``Science of Science'', and serves as a tool for users to navigate the ever-expanding corpus of scientific literature via both semantic and temporal methods.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
