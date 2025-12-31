@@ -5,6 +5,7 @@
 *.userosscache
 *.sln.docstates
 *.env*
+!.env.example
 
 .venv
 
